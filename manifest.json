@@ -1,14 +1,20 @@
 {
   "manifest_version": 3,
   "name": "NotebookLM Tag & Filter",
-  "version": "1.0.0",
-  "description": "Tag and filter NotebookLM chat messages by topic for easier navigation and organization.",
-  "permissions": ["storage"],
+  "version": "2.0.0",
+  "description": "Tag and filter NotebookLM chat messages via a sidebar panel.",
+  "permissions": ["storage", "sidePanel", "activeTab", "tabs", "scripting"],
+  "host_permissions": ["https://notebooklm.google.com/*"],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
   "content_scripts": [
     {
       "matches": ["https://notebooklm.google.com/*"],
       "js": ["content.js"],
-      "css": ["content.css"],
       "run_at": "document_idle"
     }
   ],
