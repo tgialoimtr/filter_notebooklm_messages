@@ -86,7 +86,7 @@
       `.chat-message-pair[data-nblm-turn-key="${turnKey}"]`
     );
     if (pair) {
-      pair.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      pair.scrollIntoView({ behavior: 'smooth', block: 'start' });
       // Brief highlight effect
       pair.style.outline = '2px solid #8ab4f8';
       pair.style.outlineOffset = '2px';
