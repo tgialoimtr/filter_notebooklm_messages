@@ -193,9 +193,28 @@
     }
   }
 
+  // ─── Popover Management ─────────────────────────────────────
+  let activePopover = null; // currently open popover element
+
+  function closeActivePopover() {
+    if (activePopover) {
+      activePopover.classList.remove('open');
+      activePopover = null;
+    }
+  }
+
+  // Close popover when clicking outside
+  document.addEventListener('click', (e) => {
+    if (activePopover && !activePopover.contains(e.target) &&
+        !e.target.closest('.sp-icon-btn')) {
+      closeActivePopover();
+    }
+  });
+
   // ─── Render Table ──────────────────────────────────────────
 
   function renderTable() {
+    closeActivePopover();
     // Clear
     while (tableBody.firstChild) tableBody.removeChild(tableBody.firstChild);
 
@@ -217,39 +236,22 @@
         sendToContentScript({ type: 'SCROLL_TO_MESSAGE', turnKey: msg.turnKey });
       });
 
-      // ─ Tags/Sources cell ─
+      // ─ Icons cell ─
       const tdMeta = document.createElement('td');
       tdMeta.className = 'sp-cell-meta';
 
-      const metaRow = document.createElement('div');
-      metaRow.className = 'sp-meta-row';
+      const iconsRow = document.createElement('div');
+      iconsRow.className = 'sp-icons-row';
 
-      // Tags
+      // Tag icon button + popover
       const tags = messageTags[msg.turnKey] || [];
-      tags.forEach((tag) => {
-        metaRow.appendChild(createTagPill(tag, msg.turnKey));
-      });
+      iconsRow.appendChild(createTagIconBtn(msg.turnKey, tags));
 
-      // Add-tag input
-      metaRow.appendChild(createTagInput(msg.turnKey));
-
-      // Separator dot (only if there are sources)
+      // Source icon button + popover
       const sources = messageSources[msg.turnKey] || [];
-      if (sources.length > 0) {
-        const sep = document.createElement('span');
-        sep.className = 'sp-meta-sep';
-        metaRow.appendChild(sep);
-      }
+      iconsRow.appendChild(createSourceIconBtn(msg.turnKey, sources));
 
-      // Sources
-      sources.forEach((src) => {
-        const pill = document.createElement('span');
-        pill.className = 'sp-source-pill';
-        pill.textContent = src;
-        metaRow.appendChild(pill);
-      });
-
-      tdMeta.appendChild(metaRow);
+      tdMeta.appendChild(iconsRow);
 
       tr.appendChild(tdMsg);
       tr.appendChild(tdMeta);
@@ -261,6 +263,137 @@
 
       tableBody.appendChild(tr);
     });
+  }
+
+  // ─── Tag Icon Button + Popover ─────────────────────────────
+
+  function createTagIconBtn(turnKey, tags) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'sp-icon-wrapper';
+
+    // Icon button
+    const btn = document.createElement('button');
+    btn.className = 'sp-icon-btn sp-icon-tag';
+    btn.title = tags.length > 0 ? `Tags: ${tags.join(', ')}` : 'Add tags';
+    btn.appendChild(createTagSVG());
+
+    // Badge showing tag count
+    if (tags.length > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'sp-icon-badge sp-icon-badge-tag';
+      badge.textContent = tags.length;
+      btn.appendChild(badge);
+    }
+
+    // Popover
+    const popover = document.createElement('div');
+    popover.className = 'sp-popover';
+    buildTagPopoverContent(popover, turnKey);
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePopover(popover);
+    });
+
+    wrapper.appendChild(btn);
+    wrapper.appendChild(popover);
+    return wrapper;
+  }
+
+  function buildTagPopoverContent(popover, turnKey) {
+    while (popover.firstChild) popover.removeChild(popover.firstChild);
+
+    const tags = messageTags[turnKey] || [];
+
+    // Tag pills
+    tags.forEach((tag) => {
+      popover.appendChild(createTagPill(tag, turnKey));
+    });
+
+    // Add tag input
+    popover.appendChild(createTagInput(turnKey));
+  }
+
+  // ─── Source Icon Button + Popover ──────────────────────────
+
+  function createSourceIconBtn(turnKey, sources) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'sp-icon-wrapper';
+
+    const btn = document.createElement('button');
+    btn.className = 'sp-icon-btn sp-icon-source';
+    btn.title = sources.length > 0 ? `Sources: ${sources.join(', ')}` : 'No sources';
+    btn.appendChild(createSourceSVG());
+
+    if (sources.length > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'sp-icon-badge sp-icon-badge-source';
+      badge.textContent = sources.length;
+      btn.appendChild(badge);
+    }
+
+    // Popover
+    const popover = document.createElement('div');
+    popover.className = 'sp-popover';
+
+    sources.forEach((src) => {
+      const pill = document.createElement('span');
+      pill.className = 'sp-source-pill';
+      pill.textContent = src;
+      popover.appendChild(pill);
+    });
+
+    if (sources.length === 0) {
+      const empty = document.createElement('span');
+      empty.className = 'sp-popover-empty';
+      empty.textContent = 'No sources';
+      popover.appendChild(empty);
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      togglePopover(popover);
+    });
+
+    wrapper.appendChild(btn);
+    wrapper.appendChild(popover);
+    return wrapper;
+  }
+
+  function togglePopover(popover) {
+    if (activePopover === popover) {
+      closeActivePopover();
+    } else {
+      closeActivePopover();
+      popover.classList.add('open');
+      activePopover = popover;
+    }
+  }
+
+  // ─── SVG Icon Helpers ──────────────────────────────────────
+
+  function createTagSVG() {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'sp-icon-svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'currentColor');
+    const path = document.createElementNS(SVG_NS, 'path');
+    // Tag/label icon
+    path.setAttribute('d', 'M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z');
+    svg.appendChild(path);
+    return svg;
+  }
+
+  function createSourceSVG() {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'sp-icon-svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'currentColor');
+    const path = document.createElementNS(SVG_NS, 'path');
+    // Document/source icon
+    path.setAttribute('d', 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z');
+    svg.appendChild(path);
+    return svg;
   }
 
   function updateEmptyState() {
