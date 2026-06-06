@@ -21,6 +21,8 @@
   let activeSourceFilters = new Set();
   let tagDropdownOpen = false;
   let sourceDropdownOpen = false;
+  let showingTrash = false;
+  let deletedMessages = new Set();
   let notebookId = 'unknown';
 
   // ─── DOM References ────────────────────────────────────────
@@ -28,6 +30,7 @@
   const emptyState = document.getElementById('emptyState');
   const btnFilterTags = document.getElementById('btnFilterTags');
   const btnFilterSources = document.getElementById('btnFilterSources');
+  const btnTrashcan = document.getElementById('btnTrashcan');
   const tagDropdown = document.getElementById('tagDropdown');
   const sourceDropdown = document.getElementById('sourceDropdown');
   const tagBadge = document.getElementById('tagBadge');
@@ -62,6 +65,7 @@
       messageSources,
       allTags: Array.from(allTags),
       allSources: Array.from(allSources),
+      deletedMessages: Array.from(deletedMessages),
     };
     await chrome.storage.local.set({ [key]: data });
   }
@@ -75,11 +79,13 @@
           messageSources = result[key].messageSources || {};
           allTags = new Set(result[key].allTags || []);
           allSources = new Set(result[key].allSources || []);
+          deletedMessages = new Set(result[key].deletedMessages || []);
         } else {
           messageTags = {};
           messageSources = {};
           allTags = new Set();
           allSources = new Set();
+          deletedMessages = new Set();
         }
         resolve();
       });
@@ -219,6 +225,13 @@
     while (tableBody.firstChild) tableBody.removeChild(tableBody.firstChild);
 
     messages.forEach((msg) => {
+      // If showing trash, only include deleted messages. Else, exclude deleted messages.
+      if (showingTrash) {
+        if (!deletedMessages.has(msg.turnKey)) return;
+      } else {
+        if (deletedMessages.has(msg.turnKey)) return;
+      }
+
       const tr = document.createElement('tr');
       tr.dataset.turnKey = msg.turnKey;
 
@@ -243,13 +256,36 @@
       const iconsRow = document.createElement('div');
       iconsRow.className = 'sp-icons-row';
 
-      // Tag icon button + popover
-      const tags = messageTags[msg.turnKey] || [];
-      iconsRow.appendChild(createTagIconBtn(msg.turnKey, tags));
+      if (showingTrash) {
+        // Recover button
+        const btnRecover = document.createElement('button');
+        btnRecover.className = 'sp-btn-recover';
+        btnRecover.textContent = 'Recover';
+        btnRecover.addEventListener('click', (e) => {
+          e.stopPropagation();
+          recoverMessage(msg.turnKey);
+        });
+        iconsRow.appendChild(btnRecover);
+      } else {
+        // Tag icon button + popover
+        const tags = messageTags[msg.turnKey] || [];
+        iconsRow.appendChild(createTagIconBtn(msg.turnKey, tags));
 
-      // Source icon button + popover
-      const sources = messageSources[msg.turnKey] || [];
-      iconsRow.appendChild(createSourceIconBtn(msg.turnKey, sources));
+        // Source icon button + popover
+        const sources = messageSources[msg.turnKey] || [];
+        iconsRow.appendChild(createSourceIconBtn(msg.turnKey, sources));
+
+        // Delete icon button
+        const btnDelete = document.createElement('button');
+        btnDelete.className = 'sp-icon-btn sp-icon-delete';
+        btnDelete.title = 'Delete message';
+        btnDelete.appendChild(createDeleteSVG());
+        btnDelete.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteMessage(msg.turnKey);
+        });
+        iconsRow.appendChild(btnDelete);
+      }
 
       tdMeta.appendChild(iconsRow);
 
@@ -396,6 +432,17 @@
     return svg;
   }
 
+  function createDeleteSVG() {
+    const svg = document.createElementNS(SVG_NS, 'svg');
+    svg.setAttribute('class', 'sp-icon-svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'currentColor');
+    const path = document.createElementNS(SVG_NS, 'path');
+    path.setAttribute('d', 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z');
+    svg.appendChild(path);
+    return svg;
+  }
+
   function updateEmptyState() {
     if (messages.length === 0) {
       emptyState.classList.add('visible');
@@ -485,9 +532,50 @@
     });
   }
 
+  // ─── Delete & Recover ───────────────────────────────────────
+
+  function deleteMessage(turnKey) {
+    deletedMessages.add(turnKey);
+    saveData();
+    renderTable();
+    updateEmptyState();
+    applyFilters();
+  }
+
+  function recoverMessage(turnKey) {
+    deletedMessages.delete(turnKey);
+    saveData();
+    renderTable();
+    updateEmptyState();
+    applyFilters();
+  }
+
+  function toggleTrash() {
+    showingTrash = !showingTrash;
+    const btnTrash = document.getElementById('btnTrashcan');
+    if (showingTrash) {
+      btnTrash.classList.add('active');
+      activeTagFilters.clear();
+      activeSourceFilters.clear();
+      updateTagBadge();
+      updateSourceBadge();
+    } else {
+      btnTrash.classList.remove('active');
+    }
+    renderTable();
+    updateEmptyState();
+    applyFilters();
+  }
+
   // ─── Filter Logic ─────────────────────────────────────────
 
   function isRowVisible(turnKey) {
+    if (showingTrash) {
+      return deletedMessages.has(turnKey);
+    }
+    if (deletedMessages.has(turnKey)) {
+      return false;
+    }
     const tagMatch = activeTagFilters.size === 0 ||
       (messageTags[turnKey] || []).some((t) => activeTagFilters.has(t));
     const sourceMatch = activeSourceFilters.size === 0 ||
@@ -499,23 +587,33 @@
     // Update table row visibility
     const rows = tableBody.querySelectorAll('tr');
     const visibleKeys = [];
+    const allVisibleIfEmpty = !showingTrash && activeTagFilters.size === 0 && activeSourceFilters.size === 0;
 
     rows.forEach((row) => {
       const turnKey = row.dataset.turnKey;
       if (isRowVisible(turnKey)) {
         row.classList.remove('sp-row-hidden');
-        visibleKeys.push(turnKey);
       } else {
         row.classList.add('sp-row-hidden');
+      }
+    });
+
+    // Determine which keys to pass to content script to show in chat
+    // Chat panel should hide deleted messages unless showingTrash is true
+    messages.forEach((msg) => {
+      if (showingTrash) {
+         if (deletedMessages.has(msg.turnKey)) visibleKeys.push(msg.turnKey);
+      } else {
+         if (!deletedMessages.has(msg.turnKey) && isRowVisible(msg.turnKey)) {
+           visibleKeys.push(msg.turnKey);
+         }
       }
     });
 
     // Tell content script to hide/show messages in the chat panel
     sendToContentScript({
       type: 'APPLY_FILTERS',
-      visibleKeys: (activeTagFilters.size === 0 && activeSourceFilters.size === 0)
-        ? []
-        : visibleKeys,
+      visibleKeys: (allVisibleIfEmpty && deletedMessages.size === 0) ? [] : visibleKeys,
     });
   }
 
@@ -523,6 +621,13 @@
 
   btnFilterTags.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (showingTrash) {
+      showingTrash = false;
+      btnTrashcan.classList.remove('active');
+      renderTable();
+      updateEmptyState();
+      applyFilters();
+    }
     sourceDropdownOpen = false;
     sourceDropdown.classList.remove('open');
     btnFilterSources.classList.remove('active-dropdown');
@@ -573,6 +678,13 @@
 
   btnFilterSources.addEventListener('click', (e) => {
     e.stopPropagation();
+    if (showingTrash) {
+      showingTrash = false;
+      btnTrashcan.classList.remove('active');
+      renderTable();
+      updateEmptyState();
+      applyFilters();
+    }
     tagDropdownOpen = false;
     tagDropdown.classList.remove('open');
 
@@ -650,6 +762,17 @@
       sourceDropdownOpen = false;
       sourceDropdown.classList.remove('open');
     }
+  });
+
+  btnTrashcan.addEventListener('click', (e) => {
+    e.stopPropagation();
+    // Close dropdowns
+    tagDropdownOpen = false;
+    tagDropdown.classList.remove('open');
+    sourceDropdownOpen = false;
+    sourceDropdown.classList.remove('open');
+
+    toggleTrash();
   });
 
   // ─── Listen for content script updates ─────────────────────
