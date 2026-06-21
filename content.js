@@ -125,7 +125,7 @@
     }
 
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       // Brief highlight effect
       el.style.outline = '2px solid #8ab4f8';
       el.style.outlineOffset = '2px';
@@ -185,43 +185,52 @@
 
   // ─── Observe chat container for new/loaded messages ────────
 
-  function observeChat() {
-    if (currentObserver) {
-      currentObserver.disconnect();
-      currentObserver = null;
-    }
+  let observedContainer = null;
 
+  function ensureObserver() {
     const container = document.querySelector(platform.chatContainerSelector);
     if (!container) return;
 
-    let debounceTimer;
-    currentObserver = new MutationObserver((mutations) => {
-      const hasRelevantChange = mutations.some(
-        (m) => m.type === 'childList' && m.addedNodes.length > 0
-      );
-      if (!hasRelevantChange) return;
+    if (container !== observedContainer) {
+      if (currentObserver) {
+        currentObserver.disconnect();
+      }
 
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        scanMessages();
-        notifySidebar({ type: 'MESSAGES_UPDATED' });
-      }, 300);
-    });
+      let debounceTimer;
+      currentObserver = new MutationObserver((mutations) => {
+        const hasRelevantChange = mutations.some(
+          (m) => m.type === 'childList' || m.type === 'characterData'
+        );
+        if (!hasRelevantChange) return;
 
-    currentObserver.observe(container, { childList: true, subtree: true });
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          scanMessages();
+          notifySidebar({ type: 'MESSAGES_UPDATED' });
+        }, 300);
+      });
+
+      // Include characterData to catch text streaming or late-rendered text
+      currentObserver.observe(container, { childList: true, subtree: true, characterData: true });
+      observedContainer = container;
+      console.log('[content.js] Attached MutationObserver to live chat container');
+    }
   }
 
-  // ─── Detect URL changes (SPA navigation) ──────────────────
+  // ─── Detect URL changes & Maintain Observer ──────────────────
 
   function watchUrlChanges() {
     setInterval(() => {
+      // 1. Check if URL changed
       const currentUrl = window.location.href;
       if (currentUrl !== lastUrl) {
         lastUrl = currentUrl;
         console.log('[content.js] URL changed to:', currentUrl);
         notifySidebar({ type: 'NOTEBOOK_CHANGED', url: currentUrl });
-        waitForChat();
       }
+
+      // 2. Ensure observer is attached to the live container
+      ensureObserver();
     }, 500);
   }
 
@@ -232,7 +241,7 @@
     if (container) {
       const msgs = scanMessages();
       console.log(`[content.js] ${platform.name} chat found, scanned ${msgs.length} messages`);
-      observeChat();
+      ensureObserver();
       notifySidebar({ type: 'MESSAGES_UPDATED' });
     } else if (attempt < 30) {
       setTimeout(() => waitForChat(attempt + 1), 500);

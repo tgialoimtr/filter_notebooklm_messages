@@ -21,6 +21,10 @@
   let showingTrash = false;
   let deletedMessages = new Set();
   let conversationId = 'unknown';
+  
+  // Cross-contamination prevention
+  let staleKeys = new Set(); 
+  let navigationLock = null;
   let lastVisibleKeys = []; // tracks currently visible turnKeys for scroll direction
 
   // ─── DOM References ────────────────────────────────────────
@@ -37,20 +41,31 @@
    * Extract a conversation ID from the active tab's URL.
    * Supports multiple platforms via URL pattern matching.
    */
-  function getConversationIdFromTab() {
+  function getConversationIdFromTab(explicitUrl = null) {
     const URL_PATTERNS = [
       /notebooklm\.google\.com\/notebook\/([^/?#]+)/,  // NotebookLM
       /chatgpt\.com\/c\/([^/?#]+)/,                     // ChatGPT
       /gemini\.google\.com\/app\/([^/?#]+)/,            // Gemini (future)
       /claude\.ai\/chat\/([^/?#]+)/,                    // Claude (future)
     ];
+
+    const matchUrl = (url) => {
+      for (const pattern of URL_PATTERNS) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+      }
+      return 'unknown';
+    };
+
+    if (explicitUrl) {
+      return Promise.resolve(matchUrl(explicitUrl));
+    }
+
     return new Promise((resolve) => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]?.url) {
-          for (const pattern of URL_PATTERNS) {
-            const match = tabs[0].url.match(pattern);
-            if (match) { resolve(match[1]); return; }
-          }
+          resolve(matchUrl(tabs[0].url));
+          return;
         }
         resolve('unknown');
       });
@@ -183,34 +198,60 @@
     }
 
     let changed = false;
-    const existingKeys = new Set(messages.map(m => m.turnKey));
+    const existingKeys = messages.map(m => m.turnKey);
     
-    for (let i = 0; i < incoming.length; i++) {
-      const incMsg = incoming[i];
-      if (existingKeys.has(incMsg.turnKey)) {
-        // Update text in case it changed (e.g. edited message)
-        const idx = messages.findIndex(m => m.turnKey === incMsg.turnKey);
+    // First pass: update text in case it changed (e.g. edited message)
+    for (const incMsg of incoming) {
+      const idx = existingKeys.indexOf(incMsg.turnKey);
+      if (idx !== -1) {
         if (messages[idx].fullText !== incMsg.fullText) {
           messages[idx].fullText = incMsg.fullText;
           changed = true;
         }
-      } else {
-        // Find the next incoming message that exists in our current list
-        let nextKnownIdx = -1;
-        for (let j = i + 1; j < incoming.length; j++) {
-          nextKnownIdx = messages.findIndex(m => m.turnKey === incoming[j].turnKey);
-          if (nextKnownIdx !== -1) break;
+      }
+    }
+
+    // Second pass: insert new messages in the correct relative position
+    for (let i = 0; i < incoming.length; i++) {
+      const incMsg = incoming[i];
+      if (!existingKeys.includes(incMsg.turnKey)) {
+        
+        // Find the closest previous incoming message that IS in our known list
+        let prevAnchorKey = null;
+        for (let j = i - 1; j >= 0; j--) {
+          if (existingKeys.includes(incoming[j].turnKey)) {
+            prevAnchorKey = incoming[j].turnKey;
+            break;
+          }
         }
 
-        if (nextKnownIdx !== -1) {
-          // Insert right before the known message
-          messages.splice(nextKnownIdx, 0, incMsg);
-        } else {
-          // No known subsequent messages, push to end
-          messages.push(incMsg);
+        // Find the closest next incoming message that IS in our known list
+        let nextAnchorKey = null;
+        for (let j = i + 1; j < incoming.length; j++) {
+          if (existingKeys.includes(incoming[j].turnKey)) {
+            nextAnchorKey = incoming[j].turnKey;
+            break;
+          }
         }
-        existingKeys.add(incMsg.turnKey);
-        changed = true;
+
+        if (prevAnchorKey) {
+          // Insert right after the previous anchor
+          const insertIdx = existingKeys.indexOf(prevAnchorKey) + 1;
+          messages.splice(insertIdx, 0, incMsg);
+          existingKeys.splice(insertIdx, 0, incMsg.turnKey); // Keep keys sync'd
+          changed = true;
+        } else if (nextAnchorKey) {
+          // Insert right before the next anchor
+          const insertIdx = existingKeys.indexOf(nextAnchorKey);
+          messages.splice(insertIdx, 0, incMsg);
+          existingKeys.splice(insertIdx, 0, incMsg.turnKey);
+          changed = true;
+        } else {
+          // Absolute fallback: No overlap (e.g. huge jump), push to end
+          messages.push(incMsg);
+          existingKeys.push(incMsg.turnKey);
+          changed = true;
+        }
       }
     }
     return changed;
@@ -219,8 +260,18 @@
   // ─── Scan Messages from Content Script ─────────────────────
 
   async function scanMessages(retries = 5, delay = 500) {
+    if (navigationLock) return;
+
     const response = await sendToContentScript({ type: 'SCAN_MESSAGES' });
     if (response?.messages) {
+      // If the DOM still contains messages from the previous topic, it's stale!
+      const isStaleDOM = response.messages.some(m => staleKeys.has(m.turnKey));
+      if (isStaleDOM) {
+        console.warn('Scan aborted: DOM still contains stale messages from previous topic. Retrying...');
+        if (retries > 0) setTimeout(() => scanMessages(retries - 1, delay * 1.5), delay);
+        return;
+      }
+
       lastVisibleKeys = response.messages.map(m => m.turnKey);
       const changed = mergeMessages(response.messages);
       if (changed) {
@@ -689,15 +740,23 @@
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === 'MESSAGES_UPDATED') {
       // Features #1 and #3: old messages loaded on scroll / new message sent
-      scanMessages(1, 200);
+      if (!navigationLock) scanMessages(1, 200);
     } else if (message.type === 'NOTEBOOK_CHANGED') {
       // Feature #2: user opened a different notebook
-      handleNotebookChange();
+      handleNotebookChange(message.url);
     }
   });
 
-  async function handleNotebookChange() {
+  async function handleNotebookChange(newUrl = null) {
     console.log('Sidebar: notebook changed, reloading...');
+    
+    // Prevent scanning while the DOM is in a chaotic transition state
+    if (navigationLock) clearTimeout(navigationLock);
+    navigationLock = setTimeout(() => {
+      navigationLock = null;
+      scanMessages(5, 600);
+    }, 1500);
+
     // Reset filters
     activeTagFilters.clear();
     updateTagBadge();
@@ -706,15 +765,24 @@
     tagDropdownOpen = false;
     tagDropdown.classList.remove('open');
 
+    // Save current keys as stale before wiping memory
+    if (messages.length > 0) {
+      staleKeys = new Set(messages.map(m => m.turnKey));
+    }
+
+    // Force clear memory immediately so we don't accidentally merge
+    messages = [];
+    messageTags = {};
+    allTags = new Set();
+    deletedMessages = new Set();
+    renderTable();
+
     // Re-read notebook ID and load saved data for it
-    conversationId = await getConversationIdFromTab();
+    conversationId = await getConversationIdFromTab(newUrl);
     await loadData();
 
     // Reset injection flag so content script can be re-injected if needed
     contentScriptInjected = false;
-
-    // Re-scan after a short delay (new chat panel may still be loading)
-    setTimeout(() => scanMessages(5, 600), 500);
   }
 
   // ─── Tab switch detection ───────────────────────────────────
