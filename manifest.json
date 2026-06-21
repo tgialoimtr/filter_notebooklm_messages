@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "NotebookLM Tag & Filter",
-  "version": "2.0.0",
-  "description": "Tag and filter NotebookLM chat messages via a sidebar panel.",
+  "name": "Chat Tag & Filter",
+  "version": "3.0.0",
+  "description": "Tag and filter chat messages across NotebookLM, ChatGPT, and more via a sidebar panel.",
   "permissions": ["storage", "sidePanel", "activeTab", "tabs", "scripting"],
-  "host_permissions": ["https://notebooklm.google.com/*"],
+  "host_permissions": [
+    "https://notebooklm.google.com/*",
+    "https://chatgpt.com/*"
+  ],
   "side_panel": {
     "default_path": "sidepanel.html"
   },
@@ -13,8 +16,11 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://notebooklm.google.com/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://notebooklm.google.com/*",
+        "https://chatgpt.com/*"
+      ],
+      "js": ["adapters.js", "content.js"],
       "run_at": "document_idle"
     }
   ],

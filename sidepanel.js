@@ -1,7 +1,8 @@
 /**
- * NotebookLM Tag & Filter — Sidebar Panel Script (v2)
+ * Chat Tag & Filter — Sidebar Panel Script (v3)
  *
- * Manages the sidebar UI: message table, tags, sources, and filter dropdowns.
+ * Manages the sidebar UI: message table, tags, and filter dropdowns.
+ * Platform-agnostic — works with NotebookLM, ChatGPT, and more.
  * Communicates with the content script via chrome.runtime messaging.
  */
 
@@ -9,62 +10,61 @@
   'use strict';
 
   // ─── State ──────────────────────────────────────────────────
-  const STORAGE_PREFIX = 'nblm_tags_';
+  const STORAGE_PREFIX = 'chat_tags_';
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
   let messages = [];         // { turnKey, fullText, turnIndex }
   let messageTags = {};      // turnKey → [tag, ...]
-  let messageSources = {};   // turnKey → [source, ...]
   let allTags = new Set();
-  let allSources = new Set();
   let activeTagFilters = new Set();
-  let activeSourceFilters = new Set();
   let tagDropdownOpen = false;
-  let sourceDropdownOpen = false;
   let showingTrash = false;
   let deletedMessages = new Set();
-  let notebookId = 'unknown';
+  let conversationId = 'unknown';
 
   // ─── DOM References ────────────────────────────────────────
   const tableBody = document.getElementById('messageTableBody');
   const emptyState = document.getElementById('emptyState');
   const btnFilterTags = document.getElementById('btnFilterTags');
-  const btnFilterSources = document.getElementById('btnFilterSources');
   const btnTrashcan = document.getElementById('btnTrashcan');
   const tagDropdown = document.getElementById('tagDropdown');
-  const sourceDropdown = document.getElementById('sourceDropdown');
   const tagBadge = document.getElementById('tagBadge');
-  const sourceBadge = document.getElementById('sourceBadge');
-
-  // ─── Hardcoded Sources ─────────────────────────────────────
-  const HARDCODED_SOURCES = ['1', '2', '3'];
 
   // ─── Utilities ─────────────────────────────────────────────
 
-  function getNotebookIdFromTab() {
+  /**
+   * Extract a conversation ID from the active tab's URL.
+   * Supports multiple platforms via URL pattern matching.
+   */
+  function getConversationIdFromTab() {
+    const URL_PATTERNS = [
+      /notebooklm\.google\.com\/notebook\/([^/?#]+)/,  // NotebookLM
+      /chatgpt\.com\/c\/([^/?#]+)/,                     // ChatGPT
+      /gemini\.google\.com\/app\/([^/?#]+)/,            // Gemini (future)
+      /claude\.ai\/chat\/([^/?#]+)/,                    // Claude (future)
+    ];
     return new Promise((resolve) => {
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]?.url) {
-          const match = tabs[0].url.match(/notebook\/([^/?#]+)/);
-          resolve(match ? match[1] : 'unknown');
-        } else {
-          resolve('unknown');
+          for (const pattern of URL_PATTERNS) {
+            const match = tabs[0].url.match(pattern);
+            if (match) { resolve(match[1]); return; }
+          }
         }
+        resolve('unknown');
       });
     });
   }
 
   function storageKey() {
-    return STORAGE_PREFIX + notebookId;
+    return STORAGE_PREFIX + conversationId;
   }
 
   async function saveData() {
     const key = storageKey();
     const data = {
       messageTags,
-      messageSources,
       allTags: Array.from(allTags),
-      allSources: Array.from(allSources),
       deletedMessages: Array.from(deletedMessages),
     };
     await chrome.storage.local.set({ [key]: data });
@@ -76,15 +76,11 @@
       chrome.storage.local.get([key], (result) => {
         if (result[key]) {
           messageTags = result[key].messageTags || {};
-          messageSources = result[key].messageSources || {};
           allTags = new Set(result[key].allTags || []);
-          allSources = new Set(result[key].allSources || []);
           deletedMessages = new Set(result[key].deletedMessages || []);
         } else {
           messageTags = {};
-          messageSources = {};
           allTags = new Set();
-          allSources = new Set();
           deletedMessages = new Set();
         }
         resolve();
@@ -103,7 +99,7 @@
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: ['content.js'],
+        files: ['adapters.js', 'content.js'],
       });
       contentScriptInjected = true;
       console.log('Content script injected into tab', tabId);
@@ -179,14 +175,6 @@
     const response = await sendToContentScript({ type: 'SCAN_MESSAGES' });
     if (response?.messages) {
       messages = response.messages;
-      // Assign hardcoded sources for each message if not already stored
-      messages.forEach((msg) => {
-        if (!messageSources[msg.turnKey]) {
-          messageSources[msg.turnKey] = [...HARDCODED_SOURCES];
-        }
-        // Rebuild allSources
-        (messageSources[msg.turnKey] || []).forEach((s) => allSources.add(s));
-      });
       renderTable();
       updateEmptyState();
     } else if (retries > 0) {
@@ -271,10 +259,6 @@
         const tags = messageTags[msg.turnKey] || [];
         iconsRow.appendChild(createTagIconBtn(msg.turnKey, tags));
 
-        // Source icon button + popover
-        const sources = messageSources[msg.turnKey] || [];
-        iconsRow.appendChild(createSourceIconBtn(msg.turnKey, sources));
-
         // Delete icon button
         const btnDelete = document.createElement('button');
         btnDelete.className = 'sp-icon-btn sp-icon-delete';
@@ -350,52 +334,6 @@
     popover.appendChild(createTagInput(turnKey));
   }
 
-  // ─── Source Icon Button + Popover ──────────────────────────
-
-  function createSourceIconBtn(turnKey, sources) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'sp-icon-wrapper';
-
-    const btn = document.createElement('button');
-    btn.className = 'sp-icon-btn sp-icon-source';
-    btn.title = sources.length > 0 ? `Sources: ${sources.join(', ')}` : 'No sources';
-    btn.appendChild(createSourceSVG());
-
-    if (sources.length > 0) {
-      const badge = document.createElement('span');
-      badge.className = 'sp-icon-badge sp-icon-badge-source';
-      badge.textContent = sources.length;
-      btn.appendChild(badge);
-    }
-
-    // Popover
-    const popover = document.createElement('div');
-    popover.className = 'sp-popover';
-
-    sources.forEach((src) => {
-      const pill = document.createElement('span');
-      pill.className = 'sp-source-pill';
-      pill.textContent = src;
-      popover.appendChild(pill);
-    });
-
-    if (sources.length === 0) {
-      const empty = document.createElement('span');
-      empty.className = 'sp-popover-empty';
-      empty.textContent = 'No sources';
-      popover.appendChild(empty);
-    }
-
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      togglePopover(popover);
-    });
-
-    wrapper.appendChild(btn);
-    wrapper.appendChild(popover);
-    return wrapper;
-  }
-
   function togglePopover(popover) {
     if (activePopover === popover) {
       closeActivePopover();
@@ -416,18 +354,6 @@
     const path = document.createElementNS(SVG_NS, 'path');
     // Tag/label icon
     path.setAttribute('d', 'M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z');
-    svg.appendChild(path);
-    return svg;
-  }
-
-  function createSourceSVG() {
-    const svg = document.createElementNS(SVG_NS, 'svg');
-    svg.setAttribute('class', 'sp-icon-svg');
-    svg.setAttribute('viewBox', '0 0 24 24');
-    svg.setAttribute('fill', 'currentColor');
-    const path = document.createElementNS(SVG_NS, 'path');
-    // Document/source icon
-    path.setAttribute('d', 'M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z');
     svg.appendChild(path);
     return svg;
   }
@@ -556,9 +482,7 @@
     if (showingTrash) {
       btnTrash.classList.add('active');
       activeTagFilters.clear();
-      activeSourceFilters.clear();
       updateTagBadge();
-      updateSourceBadge();
     } else {
       btnTrash.classList.remove('active');
     }
@@ -578,16 +502,14 @@
     }
     const tagMatch = activeTagFilters.size === 0 ||
       (messageTags[turnKey] || []).some((t) => activeTagFilters.has(t));
-    const sourceMatch = activeSourceFilters.size === 0 ||
-      (messageSources[turnKey] || []).some((s) => activeSourceFilters.has(s));
-    return tagMatch && sourceMatch;
+    return tagMatch;
   }
 
   function applyFilters() {
     // Update table row visibility
     const rows = tableBody.querySelectorAll('tr');
     const visibleKeys = [];
-    const allVisibleIfEmpty = !showingTrash && activeTagFilters.size === 0 && activeSourceFilters.size === 0;
+    const allVisibleIfEmpty = !showingTrash && activeTagFilters.size === 0;
 
     rows.forEach((row) => {
       const turnKey = row.dataset.turnKey;
@@ -628,9 +550,6 @@
       updateEmptyState();
       applyFilters();
     }
-    sourceDropdownOpen = false;
-    sourceDropdown.classList.remove('open');
-    btnFilterSources.classList.remove('active-dropdown');
 
     tagDropdownOpen = !tagDropdownOpen;
     if (tagDropdownOpen) {
@@ -674,61 +593,7 @@
     }
   }
 
-  // ─── Source Dropdown ───────────────────────────────────────
 
-  btnFilterSources.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (showingTrash) {
-      showingTrash = false;
-      btnTrashcan.classList.remove('active');
-      renderTable();
-      updateEmptyState();
-      applyFilters();
-    }
-    tagDropdownOpen = false;
-    tagDropdown.classList.remove('open');
-
-    sourceDropdownOpen = !sourceDropdownOpen;
-    if (sourceDropdownOpen) {
-      refreshSourceDropdown();
-      sourceDropdown.classList.add('open');
-    } else {
-      sourceDropdown.classList.remove('open');
-    }
-  });
-
-  function refreshSourceDropdown() {
-    while (sourceDropdown.firstChild) sourceDropdown.removeChild(sourceDropdown.firstChild);
-
-    if (allSources.size === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'sp-dropdown-empty';
-      empty.textContent = 'No sources available.';
-      sourceDropdown.appendChild(empty);
-      return;
-    }
-
-    Array.from(allSources).sort().forEach((src) => {
-      const item = createDropdownItem(src, activeSourceFilters.has(src));
-      item.addEventListener('click', () => {
-        if (activeSourceFilters.has(src)) activeSourceFilters.delete(src);
-        else activeSourceFilters.add(src);
-        refreshSourceDropdown();
-        updateSourceBadge();
-        applyFilters();
-      });
-      sourceDropdown.appendChild(item);
-    });
-  }
-
-  function updateSourceBadge() {
-    if (activeSourceFilters.size > 0) {
-      btnFilterSources.classList.add('active');
-      sourceBadge.textContent = activeSourceFilters.size;
-    } else {
-      btnFilterSources.classList.remove('active');
-    }
-  }
 
   // ─── Shared Dropdown Item ──────────────────────────────────
 
@@ -752,15 +617,10 @@
 
   document.addEventListener('click', (e) => {
     const tagWrapper = document.getElementById('tagFilterWrapper');
-    const sourceWrapper = document.getElementById('sourceFilterWrapper');
 
     if (tagDropdownOpen && !tagWrapper.contains(e.target)) {
       tagDropdownOpen = false;
       tagDropdown.classList.remove('open');
-    }
-    if (sourceDropdownOpen && !sourceWrapper.contains(e.target)) {
-      sourceDropdownOpen = false;
-      sourceDropdown.classList.remove('open');
     }
   });
 
@@ -769,8 +629,6 @@
     // Close dropdowns
     tagDropdownOpen = false;
     tagDropdown.classList.remove('open');
-    sourceDropdownOpen = false;
-    sourceDropdown.classList.remove('open');
 
     toggleTrash();
   });
@@ -791,18 +649,14 @@
     console.log('Sidebar: notebook changed, reloading...');
     // Reset filters
     activeTagFilters.clear();
-    activeSourceFilters.clear();
     updateTagBadge();
-    updateSourceBadge();
 
     // Close any open dropdowns
     tagDropdownOpen = false;
-    sourceDropdownOpen = false;
     tagDropdown.classList.remove('open');
-    sourceDropdown.classList.remove('open');
 
     // Re-read notebook ID and load saved data for it
-    notebookId = await getNotebookIdFromTab();
+    conversationId = await getConversationIdFromTab();
     await loadData();
 
     // Reset injection flag so content script can be re-injected if needed
@@ -815,8 +669,8 @@
   // ─── Init ──────────────────────────────────────────────────
 
   async function init() {
-    notebookId = await getNotebookIdFromTab();
-    console.log('Sidebar init — notebookId:', notebookId);
+    conversationId = await getConversationIdFromTab();
+    console.log('Sidebar init — conversationId:', conversationId);
     await loadData();
     // Give content script time to initialize, then scan with retries
     setTimeout(() => scanMessages(5, 600), 500);

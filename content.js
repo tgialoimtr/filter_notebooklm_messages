@@ -1,20 +1,15 @@
 /**
- * NotebookLM Tag & Filter — Content Script (v2)
+ * Chat Tag & Filter — Content Script
  *
- * Lightweight content script that:
- *  1. Scans user messages from the chat panel
- *  2. Responds to sidebar requests for message data
- *  3. Scrolls to a specific message on command
- *  4. Watches for DOM changes (new messages, scroll-loaded old messages)
- *  5. Watches for URL changes (notebook switch in SPA)
+ * Platform-agnostic content script that:
+ *  1. Detects which chat platform is active (via adapters.js)
+ *  2. Scans user messages from the chat panel
+ *  3. Responds to sidebar requests for message data
+ *  4. Scrolls to a specific message on command
+ *  5. Watches for DOM changes (new messages, scroll-loaded old messages)
+ *  6. Watches for URL changes (conversation switch in SPA)
  *
- * DOM Structure (as of 2026-06):
- *   .chat-panel-content
- *     ├── div.chat-message-pair
- *     │     ├── chat-message.individual-message
- *     │     │     └── div.from-user-container      ← user turn
- *     │     └── chat-message.individual-message
- *     │           └── div.to-user-container        ← model turn
+ * Platform-specific logic lives in adapters.js.
  */
 
 (() => {
@@ -24,106 +19,72 @@
   if (window.__nblmContentScriptLoaded) return;
   window.__nblmContentScriptLoaded = true;
 
-  const SELECTORS = {
-    chatContent: '.chat-panel-content',
-    messagePair: '.chat-message-pair',
-    userContent: '.from-user-container',
-  };
+  // ─── Detect Platform ──────────────────────────────────────
+  const platform = detectPlatform();
+  if (!platform) {
+    console.warn('[content.js] No platform adapter found for', window.location.hostname);
+    return;
+  }
+  console.log('[content.js] Platform detected:', platform.name);
 
   let currentObserver = null;
   let lastUrl = window.location.href;
 
   /**
-   * Generate a stable key for a conversation turn.
-   * Uses the user message text hash for cross-reload stability.
-   */
-  function getTurnKey(userText, turnIndex) {
-    const text = (userText || '').trim().slice(0, 100);
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      hash = ((hash << 5) - hash) + text.charCodeAt(i);
-      hash |= 0;
-    }
-    return `turn_${turnIndex}_${hash}`;
-  }
-
-  /**
-   * Scan all user messages in the chat panel.
+   * Scan all user messages using the platform adapter.
    * Returns array of { turnKey, fullText, turnIndex }.
+   * Also tags each element with data-nblm-turn-key for lookup.
    */
   function scanMessages() {
-    const chatContent = document.querySelector(SELECTORS.chatContent);
-    if (!chatContent) return [];
+    const results = platform.scanMessages();
 
-    const pairs = chatContent.querySelectorAll(SELECTORS.messagePair);
-    const messages = [];
-
-    pairs.forEach((pair, index) => {
-      const userEl = pair.querySelector(SELECTORS.userContent);
-      const fullText = userEl ? userEl.textContent.trim() : '';
-      if (!fullText) return;
-
-      const turnKey = getTurnKey(fullText, index);
-
-      // Store turnKey on the element for scroll-to lookup
-      pair.dataset.nblmTurnKey = turnKey;
-
-      messages.push({
-        turnKey,
-        fullText,
-        turnIndex: index,
-      });
+    // Tag each element with the turnKey for scroll/filter lookup
+    results.forEach((msg) => {
+      if (msg.element) {
+        msg.element.dataset.nblmTurnKey = msg.turnKey;
+      }
     });
 
-    return messages;
+    // Return without the element reference (not serializable for messaging)
+    return results.map(({ turnKey, fullText, turnIndex }) => ({
+      turnKey,
+      fullText,
+      turnIndex,
+    }));
   }
 
   /**
-   * Scroll the chat panel to the message with the given turnKey.
+   * Scroll to the message with the given turnKey.
    */
   function scrollToMessage(turnKey) {
-    const pair = document.querySelector(
-      `.chat-message-pair[data-nblm-turn-key="${turnKey}"]`
-    );
-    if (pair) {
-      pair.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const el = platform.findElement(turnKey)
+      || document.querySelector(`[data-nblm-turn-key="${turnKey}"]`);
+
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
       // Brief highlight effect
-      pair.style.outline = '2px solid #8ab4f8';
-      pair.style.outlineOffset = '2px';
-      pair.style.borderRadius = '8px';
-      pair.style.transition = 'outline-color 1.5s ease';
+      el.style.outline = '2px solid #8ab4f8';
+      el.style.outlineOffset = '2px';
+      el.style.borderRadius = '8px';
+      el.style.transition = 'outline-color 1.5s ease';
       setTimeout(() => {
-        pair.style.outlineColor = 'transparent';
+        el.style.outlineColor = 'transparent';
         setTimeout(() => {
-          pair.style.outline = '';
-          pair.style.outlineOffset = '';
-          pair.style.borderRadius = '';
-          pair.style.transition = '';
+          el.style.outline = '';
+          el.style.outlineOffset = '';
+          el.style.borderRadius = '';
+          el.style.transition = '';
         }, 1500);
       }, 800);
     }
   }
 
   /**
-   * Apply visibility filters to chat-message-pair elements.
+   * Apply visibility filters using the platform adapter.
    * visibleKeys: array of turnKeys to show (empty = show all).
    */
   function applyFilters(visibleKeys) {
-    const chatContent = document.querySelector(SELECTORS.chatContent);
-    if (!chatContent) return;
-
-    const pairs = chatContent.querySelectorAll(SELECTORS.messagePair);
-    const keySet = new Set(visibleKeys);
-    const showAll = keySet.size === 0;
-
-    pairs.forEach((pair) => {
-      const turnKey = pair.dataset.nblmTurnKey;
-      if (showAll || keySet.has(turnKey)) {
-        pair.style.display = '';
-      } else {
-        pair.style.display = 'none';
-      }
-    });
+    platform.applyVisibility(new Set(visibleKeys));
   }
 
   // ─── Safely send message to sidebar ────────────────────────
@@ -140,7 +101,7 @@
     switch (message.type) {
       case 'SCAN_MESSAGES': {
         const messages = scanMessages();
-        sendResponse({ messages });
+        sendResponse({ messages, platform: platform.name });
         return true;
       }
       case 'SCROLL_TO_MESSAGE': {
@@ -158,22 +119,19 @@
     }
   });
 
-  // ─── Observe chat panel for new/loaded messages ────────────
-  // Handles: #1 (scroll up → old messages) and #3 (send → new message)
+  // ─── Observe chat container for new/loaded messages ────────
 
-  function observeChatContent() {
-    // Disconnect previous observer if any
+  function observeChat() {
     if (currentObserver) {
       currentObserver.disconnect();
       currentObserver = null;
     }
 
-    const chatContent = document.querySelector(SELECTORS.chatContent);
-    if (!chatContent) return;
+    const container = document.querySelector(platform.chatContainerSelector);
+    if (!container) return;
 
     let debounceTimer;
     currentObserver = new MutationObserver((mutations) => {
-      // Only react to actual child additions (new message pairs)
       const hasRelevantChange = mutations.some(
         (m) => m.type === 'childList' && m.addedNodes.length > 0
       );
@@ -186,44 +144,38 @@
       }, 300);
     });
 
-    currentObserver.observe(chatContent, { childList: true, subtree: true });
+    currentObserver.observe(container, { childList: true, subtree: true });
   }
 
-  // ─── Detect URL changes (SPA notebook navigation) ─────────
-  // Handles: #2 (open new notebook → sidebar refreshes)
+  // ─── Detect URL changes (SPA navigation) ──────────────────
 
   function watchUrlChanges() {
-    // Poll for URL changes since NotebookLM is a SPA
     setInterval(() => {
       const currentUrl = window.location.href;
       if (currentUrl !== lastUrl) {
         lastUrl = currentUrl;
         console.log('[content.js] URL changed to:', currentUrl);
-
-        // Notify sidebar that notebook changed
         notifySidebar({ type: 'NOTEBOOK_CHANGED', url: currentUrl });
-
-        // Re-initialize: wait for new chat panel to appear, then observe it
-        waitForChatPanel();
+        waitForChat();
       }
     }, 500);
   }
 
-  // ─── Wait for chat panel to appear, then start observing ───
+  // ─── Wait for chat container to appear, then start ─────────
 
-  function waitForChatPanel(attempt = 0) {
-    const chatContent = document.querySelector(SELECTORS.chatContent);
-    if (chatContent) {
+  function waitForChat(attempt = 0) {
+    const container = document.querySelector(platform.chatContainerSelector);
+    if (container) {
       const msgs = scanMessages();
-      console.log('[content.js] Chat panel found, scanned', msgs.length, 'messages');
-      observeChatContent();
+      console.log(`[content.js] ${platform.name} chat found, scanned ${msgs.length} messages`);
+      observeChat();
       notifySidebar({ type: 'MESSAGES_UPDATED' });
     } else if (attempt < 30) {
-      setTimeout(() => waitForChatPanel(attempt + 1), 500);
+      setTimeout(() => waitForChat(attempt + 1), 500);
     }
   }
 
   // ─── Bootstrap ─────────────────────────────────────────────
-  waitForChatPanel();
+  waitForChat();
   watchUrlChanges();
 })();
