@@ -181,13 +181,78 @@ const PLATFORM_ADAPTERS = [
   //   applyVisibility(visibleKeys) { ... },
   // },
 
-  // ─── Claude (placeholder — fill in after DOM inspection) ───
-  // {
-  //   name: 'claude',
-  //   hostPattern: 'claude.ai',
-  //   urlPatterns: ['https://claude.ai/*'],
-  //   ...
-  // },
+  // ─── Claude ─────────────────────────────────────────────────
+  {
+    name: 'claude',
+    hostPattern: 'claude.ai',
+    urlPatterns: ['https://claude.ai/*'],
+
+    getConversationId(url) {
+      const match = url.match(/\/chat\/([^/?#]+)/);
+      return match ? match[1] : null;
+    },
+
+    // 'main' is stable semantic HTML that contains all chat messages.
+    // MutationObserver uses subtree:true so this ancestor is sufficient.
+    chatContainerSelector: 'main',
+
+    /**
+     * Claude uses data-user-message-bubble="true" for user messages.
+     * Actual text content lives inside [data-testid="user-message"].
+     * Messages are NOT paired in a wrapper — they sit as siblings.
+     */
+    scanMessages() {
+      const userMsgs = document.querySelectorAll(
+        '[data-user-message-bubble="true"]'
+      );
+      const messages = [];
+
+      userMsgs.forEach((msgEl, index) => {
+        const textEl = msgEl.querySelector('[data-testid="user-message"]');
+        const fullText = textEl
+          ? textEl.textContent.trim()
+          : msgEl.textContent.trim();
+        if (!fullText) return;
+
+        const turnKey = _hashTurnKey(fullText, index);
+
+        messages.push({
+          turnKey,
+          fullText,
+          turnIndex: index,
+          element: msgEl,
+        });
+      });
+
+      return messages;
+    },
+
+    findElement(turnKey) {
+      return document.querySelector(
+        `[data-user-message-bubble="true"][data-nblm-turn-key="${turnKey}"]`
+      );
+    },
+
+    applyVisibility(visibleKeys) {
+      const userMsgs = document.querySelectorAll(
+        '[data-user-message-bubble="true"]'
+      );
+      const showAll = visibleKeys.size === 0;
+
+      userMsgs.forEach((msgEl) => {
+        const turnKey = msgEl.dataset.nblmTurnKey;
+        const assistantEl = _findClaudeAssistantReply(msgEl);
+
+        if (showAll || visibleKeys.has(turnKey)) {
+          msgEl.style.display = '';
+          if (assistantEl) assistantEl.style.display = '';
+        } else {
+          msgEl.style.display = 'none';
+          if (assistantEl) assistantEl.style.display = 'none';
+        }
+      });
+    },
+  },
 
   // ─── Grok (placeholder — fill in after DOM inspection) ─────
   // {
@@ -226,6 +291,38 @@ function _findNextAssistant(userMsgEl) {
     if (next && next.querySelector('[data-message-author-role="assistant"]')) {
       return next;
     }
+  }
+  return null;
+}
+
+/**
+ * For Claude: find the assistant reply following a user message.
+ * User messages ([data-user-message-bubble]) and assistant replies
+ * ([data-test-render-count]) are siblings or near-siblings in the DOM.
+ * We walk up from the user bubble to its nearest turn-level ancestor,
+ * then scan subsequent siblings for the assistant block.
+ */
+function _findClaudeAssistantReply(userMsgEl) {
+  // Walk up to find the turn-level wrapper (the div that contains the bubble)
+  let wrapper = userMsgEl.parentElement;
+  // Keep walking up until we find a sibling that contains the assistant reply,
+  // or we hit a reasonable ancestor (max 5 levels)
+  for (let i = 0; i < 5 && wrapper; i++) {
+    let sibling = wrapper.nextElementSibling;
+    while (sibling) {
+      // Check if this sibling IS or CONTAINS the assistant reply
+      if (sibling.hasAttribute('data-test-render-count') ||
+          sibling.querySelector('[data-test-render-count]')) {
+        return sibling;
+      }
+      // If we hit another user message, stop — no assistant reply in between
+      if (sibling.hasAttribute('data-user-message-bubble') ||
+          sibling.querySelector('[data-user-message-bubble]')) {
+        break;
+      }
+      sibling = sibling.nextElementSibling;
+    }
+    wrapper = wrapper.parentElement;
   }
   return null;
 }
