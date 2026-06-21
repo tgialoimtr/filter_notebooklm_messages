@@ -90,7 +90,7 @@
   // ─── Safely send message to sidebar ────────────────────────
   function notifySidebar(msg) {
     try {
-      chrome.runtime.sendMessage(msg).catch(() => {});
+      chrome.runtime.sendMessage(msg).catch(() => { });
     } catch (e) {
       // Extension context invalidated — ignore
     }

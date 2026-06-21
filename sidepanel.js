@@ -200,7 +200,7 @@
   // Close popover when clicking outside
   document.addEventListener('click', (e) => {
     if (activePopover && !activePopover.contains(e.target) &&
-        !e.target.closest('.sp-icon-btn')) {
+      !e.target.closest('.sp-icon-btn')) {
       closeActivePopover();
     }
   });
@@ -524,11 +524,11 @@
     // Chat panel should hide deleted messages unless showingTrash is true
     messages.forEach((msg) => {
       if (showingTrash) {
-         if (deletedMessages.has(msg.turnKey)) visibleKeys.push(msg.turnKey);
+        if (deletedMessages.has(msg.turnKey)) visibleKeys.push(msg.turnKey);
       } else {
-         if (!deletedMessages.has(msg.turnKey) && isRowVisible(msg.turnKey)) {
-           visibleKeys.push(msg.turnKey);
-         }
+        if (!deletedMessages.has(msg.turnKey) && isRowVisible(msg.turnKey)) {
+          visibleKeys.push(msg.turnKey);
+        }
       }
     });
 
@@ -665,6 +665,17 @@
     // Re-scan after a short delay (new chat panel may still be loading)
     setTimeout(() => scanMessages(5, 600), 500);
   }
+
+  // ─── Tab switch detection ───────────────────────────────────
+  // When the user switches between tabs (e.g. ChatGPT → Claude),
+  // the sidebar must re-scan for the newly active tab's messages.
+
+  let tabSwitchDebounce = null;
+
+  chrome.tabs.onActivated.addListener(() => {
+    clearTimeout(tabSwitchDebounce);
+    tabSwitchDebounce = setTimeout(() => handleNotebookChange(), 300);
+  });
 
   // ─── Init ──────────────────────────────────────────────────
 
