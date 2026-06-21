@@ -55,13 +55,77 @@
 
   /**
    * Scroll to the message with the given turnKey.
+   * If not in DOM, jump to the bottom and auto-scroll UP to find it.
    */
-  function scrollToMessage(turnKey) {
-    const el = platform.findElement(turnKey)
-      || document.querySelector(`[data-nblm-turn-key="${turnKey}"]`);
+  async function scrollToMessage(turnKey) {
+    let el = platform.findElement(turnKey) || document.querySelector(`[data-nblm-turn-key="${turnKey}"]`);
+
+    if (!el) {
+      console.log(`[content.js] Message ${turnKey} not in DOM. Jumping to bottom and seeking UP.`);
+      let attempts = 0;
+      const direction = -1; // Always seek up from bottom
+      
+      // Dynamically find ALL scrollable containers on the page
+      const possibleContainers = Array.from(document.querySelectorAll('*')).filter(c => {
+        const style = window.getComputedStyle(c);
+        return (style.overflowY === 'auto' || style.overflowY === 'scroll') && c.scrollHeight > c.clientHeight;
+      });
+      if (document.scrollingElement) possibleContainers.push(document.scrollingElement);
+
+      // 1. Jump to absolute bottom
+      window.scrollTo(0, document.body.scrollHeight);
+      possibleContainers.forEach(c => { c.scrollTop = c.scrollHeight; });
+      await new Promise(r => setTimeout(r, 300)); // Give React extra time to render the bottom anchor
+
+      el = platform.findElement(turnKey) || document.querySelector(`[data-nblm-turn-key="${turnKey}"]`);
+
+      // 2. Seek UP
+      const maxAttempts = 150;
+      const scrollStep = Math.min(window.innerHeight * 0.85, 800);
+
+      while (!el && attempts < maxAttempts) {
+        let actuallyScrolled = false;
+        
+        const prevScrollY = window.scrollY;
+        const prevPositions = possibleContainers.map(c => c.scrollTop);
+
+        // Try scrolling window and all containers UP
+        window.scrollBy(0, direction * scrollStep);
+        possibleContainers.forEach(c => {
+          if (c.scrollBy) {
+            c.scrollBy({ top: direction * scrollStep, behavior: 'instant' });
+          } else {
+            c.scrollTop += direction * scrollStep;
+          }
+        });
+        
+        // Check if anything actually moved (allow 1px rounding diffs)
+        if (Math.abs(window.scrollY - prevScrollY) > 1) actuallyScrolled = true;
+        possibleContainers.forEach((c, idx) => {
+          if (Math.abs(c.scrollTop - prevPositions[idx]) > 1) {
+             actuallyScrolled = true;
+          }
+        });
+
+        if (!actuallyScrolled) {
+          console.warn(`[content.js] Reached top scroll boundary, cannot seek further UP.`);
+          break;
+        }
+
+        await new Promise(r => setTimeout(r, 100)); // Faster wait for virtual DOM
+        el = platform.findElement(turnKey) || document.querySelector(`[data-nblm-turn-key="${turnKey}"]`);
+        attempts++;
+      }
+      
+      if (!el) {
+        console.warn(`[content.js] Auto-seek failed after ${attempts} attempts for: ${turnKey}`);
+      } else {
+        console.log(`[content.js] Found message after ${attempts} scroll attempts!`);
+      }
+    }
 
     if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       // Brief highlight effect
       el.style.outline = '2px solid #8ab4f8';
       el.style.outlineOffset = '2px';

@@ -21,6 +21,7 @@
   let showingTrash = false;
   let deletedMessages = new Set();
   let conversationId = 'unknown';
+  let lastVisibleKeys = []; // tracks currently visible turnKeys for scroll direction
 
   // ─── DOM References ────────────────────────────────────────
   const tableBody = document.getElementById('messageTableBody');
@@ -63,6 +64,7 @@
   async function saveData() {
     const key = storageKey();
     const data = {
+      messages, // <-- persist accumulated messages
       messageTags,
       allTags: Array.from(allTags),
       deletedMessages: Array.from(deletedMessages),
@@ -75,10 +77,12 @@
     return new Promise((resolve) => {
       chrome.storage.local.get([key], (result) => {
         if (result[key]) {
+          messages = result[key].messages || []; // <-- load accumulated messages
           messageTags = result[key].messageTags || {};
           allTags = new Set(result[key].allTags || []);
           deletedMessages = new Set(result[key].deletedMessages || []);
         } else {
+          messages = [];
           messageTags = {};
           allTags = new Set();
           deletedMessages = new Set();
@@ -169,12 +173,59 @@
     return svg;
   }
 
+  // ─── Merge Messages (Virtual Scrolling Support) ─────────────
+  
+  function mergeMessages(incoming) {
+    if (!incoming || incoming.length === 0) return false;
+    if (messages.length === 0) {
+      messages = incoming;
+      return true;
+    }
+
+    let changed = false;
+    const existingKeys = new Set(messages.map(m => m.turnKey));
+    
+    for (let i = 0; i < incoming.length; i++) {
+      const incMsg = incoming[i];
+      if (existingKeys.has(incMsg.turnKey)) {
+        // Update text in case it changed (e.g. edited message)
+        const idx = messages.findIndex(m => m.turnKey === incMsg.turnKey);
+        if (messages[idx].fullText !== incMsg.fullText) {
+          messages[idx].fullText = incMsg.fullText;
+          changed = true;
+        }
+      } else {
+        // Find the next incoming message that exists in our current list
+        let nextKnownIdx = -1;
+        for (let j = i + 1; j < incoming.length; j++) {
+          nextKnownIdx = messages.findIndex(m => m.turnKey === incoming[j].turnKey);
+          if (nextKnownIdx !== -1) break;
+        }
+
+        if (nextKnownIdx !== -1) {
+          // Insert right before the known message
+          messages.splice(nextKnownIdx, 0, incMsg);
+        } else {
+          // No known subsequent messages, push to end
+          messages.push(incMsg);
+        }
+        existingKeys.add(incMsg.turnKey);
+        changed = true;
+      }
+    }
+    return changed;
+  }
+
   // ─── Scan Messages from Content Script ─────────────────────
 
   async function scanMessages(retries = 5, delay = 500) {
     const response = await sendToContentScript({ type: 'SCAN_MESSAGES' });
     if (response?.messages) {
-      messages = response.messages;
+      lastVisibleKeys = response.messages.map(m => m.turnKey);
+      const changed = mergeMessages(response.messages);
+      if (changed) {
+        saveData(); // Persist newly discovered messages
+      }
       renderTable();
       updateEmptyState();
     } else if (retries > 0) {
