@@ -1,9 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Chat Tag & Filter",
+  "name": "Long Thread Organizer",
   "version": "3.0.0",
-  "description": "Tag and filter chat messages across NotebookLM, ChatGPT, and more via a sidebar panel.",
-  "permissions": ["storage", "sidePanel", "activeTab", "tabs", "scripting"],
+  "description": "Organize and jump to chat messages inside a thread easily (for NotebookLM, ChatGPT, Gemini, Claude)",
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "activeTab",
+    "tabs",
+    "scripting"
+  ],
   "host_permissions": [
     "https://notebooklm.google.com/*",
     "https://chatgpt.com/*",
@@ -24,7 +30,10 @@
         "https://claude.ai/*",
         "https://gemini.google.com/*"
       ],
-      "js": ["adapters.js", "content.js"],
+      "js": [
+        "adapters.js",
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],

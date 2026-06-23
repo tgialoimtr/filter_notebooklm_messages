@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,14 +10,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 </head>
+
 <body>
   <!-- ─── Top Bar ─────────────────────────────────────── -->
   <header class="sp-header">
-    <h1 class="sp-title">Chat Tags</h1>
+    <h1 class="sp-title">Organize Messages by Tags</h1>
     <div class="sp-filter-buttons">
       <div class="sp-filter-wrapper" id="tagFilterWrapper">
         <button class="sp-filter-btn" id="btnFilterTags">
-          <svg class="sp-btn-icon" viewBox="0 0 24 24"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+          <svg class="sp-btn-icon" viewBox="0 0 24 24">
+            <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" />
+          </svg>
           Filter by Tags
           <span class="sp-badge" id="tagBadge">0</span>
         </button>
@@ -25,7 +29,9 @@
 
       <!-- Trashcan Toggle -->
       <button class="sp-filter-btn" id="btnTrashcan" title="View Deleted">
-        <svg class="sp-btn-icon" viewBox="0 0 24 24"><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg>
+        <svg class="sp-btn-icon" viewBox="0 0 24 24">
+          <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />
+        </svg>
         Trash can
       </button>
     </div>
@@ -46,7 +52,10 @@
       </tbody>
     </table>
     <div class="sp-empty-state" id="emptyState">
-      <svg class="sp-empty-icon" viewBox="0 0 48 48"><path d="M24 4C12.96 4 4 12.96 4 24s8.96 20 20 20 20-8.96 20-20S35.04 4 24 4zm2 30h-4v-4h4v4zm0-8h-4V14h4v12z" fill="currentColor" opacity="0.3"/></svg>
+      <svg class="sp-empty-icon" viewBox="0 0 48 48">
+        <path d="M24 4C12.96 4 4 12.96 4 24s8.96 20 20 20 20-8.96 20-20S35.04 4 24 4zm2 30h-4v-4h4v4zm0-8h-4V14h4v12z"
+          fill="currentColor" opacity="0.3" />
+      </svg>
       <p>No messages found yet.</p>
       <p class="sp-empty-hint">Open a NotebookLM notebook and start chatting!</p>
     </div>
@@ -54,4 +63,5 @@
 
   <script src="sidepanel.js"></script>
 </body>
+
 </html>
