@@ -7,7 +7,8 @@
   "host_permissions": [
     "https://notebooklm.google.com/*",
     "https://chatgpt.com/*",
-    "https://claude.ai/*"
+    "https://claude.ai/*",
+    "https://gemini.google.com/*"
   ],
   "side_panel": {
     "default_path": "sidepanel.html"
@@ -20,7 +21,8 @@
       "matches": [
         "https://notebooklm.google.com/*",
         "https://chatgpt.com/*",
-        "https://claude.ai/*"
+        "https://claude.ai/*",
+        "https://gemini.google.com/*"
       ],
       "js": ["adapters.js", "content.js"],
       "run_at": "document_idle"

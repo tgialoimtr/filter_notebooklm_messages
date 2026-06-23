@@ -169,17 +169,77 @@ const PLATFORM_ADAPTERS = [
     },
   },
 
-  // ─── Gemini (placeholder — fill in after DOM inspection) ───
-  // {
-  //   name: 'gemini',
-  //   hostPattern: 'gemini.google.com',
-  //   urlPatterns: ['https://gemini.google.com/*'],
-  //   getConversationId(url) { ... },
-  //   chatContainerSelector: '...',
-  //   scanMessages() { ... },
-  //   findElement(turnKey) { ... },
-  //   applyVisibility(visibleKeys) { ... },
-  // },
+  // ─── Gemini ────────────────────────────────────────────────
+  {
+    name: 'gemini',
+    hostPattern: 'gemini.google.com',
+    urlPatterns: ['https://gemini.google.com/*'],
+
+    getConversationId(url) {
+      const match = url.match(/\/app\/([^/?#]+)/);
+      return match ? match[1] : null;
+    },
+
+    // A broad selector since Gemini's Angular app might shift specific wrappers
+    chatContainerSelector: 'chat-app, main, [role="main"], body',
+
+    scanMessages() {
+      // Find all turn containers
+      const containers = document.querySelectorAll('.conversation-container');
+      const messages = [];
+
+      containers.forEach((container, index) => {
+        // The user text is inside .query-text-line
+        const queryEls = container.querySelectorAll('.query-text-line');
+        if (queryEls.length === 0) return;
+
+        // Combine text if there are multiple paragraphs
+        const fullText = Array.from(queryEls)
+          .map((el) => el.textContent.trim())
+          .join('\n')
+          .trim();
+        if (!fullText) return;
+
+        // Use the native id if available, else fallback to hash
+        const nativeId = container.id || null;
+        const turnKey = nativeId || _hashTurnKey(fullText, index);
+
+        messages.push({
+          turnKey,
+          fullText,
+          turnIndex: index,
+          element: container,
+        });
+      });
+
+      return messages;
+    },
+
+    findElement(turnKey) {
+      // Try by ID first if it was a native ID
+      const el = document.getElementById(turnKey);
+      if (el && el.classList.contains('conversation-container')) return el;
+
+      // Fallback to data attribute
+      return document.querySelector(
+        `.conversation-container[data-nblm-turn-key="${turnKey}"]`
+      );
+    },
+
+    applyVisibility(visibleKeys) {
+      const containers = document.querySelectorAll('.conversation-container');
+      const showAll = visibleKeys.size === 0;
+
+      containers.forEach((container) => {
+        const turnKey = container.dataset.nblmTurnKey;
+        if (showAll || visibleKeys.has(turnKey)) {
+          container.style.display = '';
+        } else {
+          container.style.display = 'none';
+        }
+      });
+    },
+  },
 
   // ─── Claude ─────────────────────────────────────────────────
   {
