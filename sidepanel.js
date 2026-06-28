@@ -412,6 +412,8 @@
     const popover = document.createElement('div');
     popover.className = 'sp-popover';
     buildTagPopoverContent(popover, turnKey);
+    
+    popover.addEventListener('click', (e) => e.stopPropagation());
 
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
