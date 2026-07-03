@@ -36,6 +36,7 @@
   const searchInput = document.getElementById('searchInput');
   const searchClearBtn = document.getElementById('searchClearBtn');
   const messageCountBadge = document.getElementById('messageCountBadge');
+  const tagFilterBar = document.getElementById('tagFilterBar');
 
   function getConversationIdFromTab(explicitUrl = null) {
     const URL_PATTERNS = [
@@ -265,20 +266,7 @@
     }
   }
 
-  let activePopover = null;
 
-  function closeActivePopover() {
-    if (activePopover) {
-      activePopover.classList.remove('open');
-      activePopover = null;
-    }
-  }
-
-  document.addEventListener('click', (e) => {
-    if (activePopover && !activePopover.contains(e.target) && !e.target.closest('.sp-icon-btn')) {
-      closeActivePopover();
-    }
-  });
 
   function matchesSearch(message) {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -303,7 +291,6 @@
   }
 
   function renderTable() {
-    closeActivePopover();
     while (listBody.firstChild) listBody.removeChild(listBody.firstChild);
 
     messages.forEach((msg) => {
@@ -321,13 +308,6 @@
       card.title = msg.fullText;
       card.classList.toggle('selected', msg.turnKey === selectedTurnKey);
 
-      const main = document.createElement('div');
-      main.className = 'sp-message-card__main';
-
-      const index = document.createElement('div');
-      index.className = 'sp-message-card__index';
-      index.textContent = `#${messages.indexOf(msg) + 1}`;
-
       const body = document.createElement('div');
       body.className = 'sp-message-card__body';
 
@@ -341,16 +321,10 @@
         const tagsRow = document.createElement('div');
         tagsRow.className = 'sp-message-card__tags';
         tags.forEach((tag) => {
-          const pill = document.createElement('span');
-          pill.className = `sp-tag-pill ${getTagToneClass(tag)}`;
-          pill.textContent = tag;
-          tagsRow.appendChild(pill);
+          tagsRow.appendChild(createTagPill(tag, msg.turnKey));
         });
         body.appendChild(tagsRow);
       }
-
-      main.appendChild(index);
-      main.appendChild(body);
 
       const actions = document.createElement('div');
       actions.className = 'sp-message-card__actions';
@@ -365,7 +339,28 @@
         });
         actions.appendChild(btnRecover);
       } else {
-        actions.appendChild(createTagIconBtn(msg.turnKey, tags));
+        // Tag input (top of actions column)
+        actions.appendChild(createTagInput(msg.turnKey));
+
+        // Bottom row: circle-number + delete
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'sp-message-card__actions-bottom';
+
+        // Green circle index button — navigates to message
+        const msgIndex = messages.indexOf(msg) + 1;
+        const indexBtn = document.createElement('button');
+        indexBtn.className = 'sp-index-btn';
+        indexBtn.textContent = msgIndex;
+        indexBtn.title = `Go to message #${msgIndex}`;
+        indexBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          // Select only — no scroll
+          listBody.querySelectorAll('.sp-message-card.selected')
+            .forEach((c) => c.classList.remove('selected'));
+          selectedTurnKey = msg.turnKey;
+          card.classList.add('selected');
+        });
+        bottomRow.appendChild(indexBtn);
 
         const btnDelete = document.createElement('button');
         btnDelete.className = 'sp-icon-btn sp-icon-delete';
@@ -375,15 +370,31 @@
           e.stopPropagation();
           deleteMessage(msg.turnKey);
         });
-        actions.appendChild(btnDelete);
+        bottomRow.appendChild(btnDelete);
+
+        actions.appendChild(bottomRow);
       }
 
-      card.appendChild(main);
-      card.appendChild(actions);
-      card.addEventListener('click', () => {
+      // Text click → scroll to message in the chat
+      text.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Select this card visually
+        listBody.querySelectorAll('.sp-message-card.selected')
+          .forEach((c) => c.classList.remove('selected'));
         selectedTurnKey = msg.turnKey;
-        renderTable();
+        card.classList.add('selected');
         sendToContentScript({ type: 'SCROLL_TO_MESSAGE', turnKey: msg.turnKey });
+      });
+
+      card.appendChild(body);
+      card.appendChild(actions);
+
+      // Card click → select only (no scroll, no re-render)
+      card.addEventListener('click', () => {
+        listBody.querySelectorAll('.sp-message-card.selected')
+          .forEach((c) => c.classList.remove('selected'));
+        selectedTurnKey = msg.turnKey;
+        card.classList.add('selected');
       });
 
       listBody.appendChild(card);
@@ -393,59 +404,6 @@
     updateEmptyState();
   }
 
-  function createTagIconBtn(turnKey, tags) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'sp-icon-wrapper';
-
-    const btn = document.createElement('button');
-    btn.className = 'sp-icon-btn sp-icon-tag';
-    btn.title = tags.length > 0 ? `Tags: ${tags.join(', ')}` : 'Add tags';
-    btn.appendChild(createTagSVG());
-
-    if (tags.length > 0) {
-      const badge = document.createElement('span');
-      badge.className = 'sp-icon-badge sp-icon-badge-tag';
-      badge.textContent = tags.length;
-      btn.appendChild(badge);
-    }
-
-    const popover = document.createElement('div');
-    popover.className = 'sp-popover';
-    buildTagPopoverContent(popover, turnKey);
-    
-    popover.addEventListener('click', (e) => e.stopPropagation());
-
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      togglePopover(popover);
-    });
-
-    wrapper.appendChild(btn);
-    wrapper.appendChild(popover);
-    return wrapper;
-  }
-
-  function buildTagPopoverContent(popover, turnKey) {
-    while (popover.firstChild) popover.removeChild(popover.firstChild);
-
-    const tags = messageTags[turnKey] || [];
-
-    tags.forEach((tag) => {
-      popover.appendChild(createTagPill(tag, turnKey));
-    });
-
-    popover.appendChild(createTagInput(turnKey));
-  }
-
-  function togglePopover(popover) {
-    if (activePopover === popover) {
-      closeActivePopover();
-    } else {
-      closeActivePopover();
-      popover.classList.add('open');
-      activePopover = popover;
-    }
-  }
 
   function createTagSVG() {
     const svg = document.createElementNS(SVG_NS, 'svg');
@@ -469,17 +427,58 @@
     return svg;
   }
 
-  function getTagToneClass(tagText) {
-    const tones = ['blue', 'teal', 'violet', 'rose', 'mint', 'amber', 'cyan', 'lilac'];
-    let hash = 0;
+  /**
+   * Hash a tag label to one of 6 curated palette colors.
+   * Returns { text, bg, border } ready for inline style application.
+   */
+  function getTagColor(tagText) {
+    // Exact saigon palette from a.html's Tailwind config
+    // Matches: bg-saigon-{color}/10  text-saigon-{color}
+    const palette = [
+      '#E53935',  // saigon-red    (flag red)
+      '#F57C00',  // saigon-orange (warm orange)
+      '#FFB300',  // saigon-yellow (golden yellow)
+      '#43A047',  // saigon-green  (leaf green)
+      '#00ACC1',  // saigon-teal   (water teal)
+    ];
 
+    // Backgrounds: exactly /10 opacity — same as a.html's bg-saigon-*/10
+    const bgPalette = [
+      'rgba(229, 57, 53, 0.10)',   // saigon-red/10
+      'rgba(245, 124, 0, 0.10)',   // saigon-orange/10
+      'rgba(255, 179, 0, 0.10)',   // saigon-yellow/10
+      'rgba(67, 160, 71, 0.10)',   // saigon-green/10
+      'rgba(0, 172, 193, 0.10)',   // saigon-teal/10
+    ];
+
+    const borderPalette = [
+      'rgba(229, 57, 53, 0.25)',
+      'rgba(245, 124, 0, 0.25)',
+      'rgba(255, 179, 0, 0.25)',
+      'rgba(67, 160, 71, 0.25)',
+      'rgba(0, 172, 193, 0.25)',
+    ];
+
+    let hash = 0;
     for (let i = 0; i < tagText.length; i += 1) {
       hash = (hash << 5) - hash + tagText.charCodeAt(i);
       hash |= 0;
     }
 
-    const index = Math.abs(hash) % tones.length;
-    return `sp-tag-pill--${tones[index]}`;
+    const index = Math.abs(hash) % palette.length;
+    return {
+      text: palette[index],
+      bg: bgPalette[index],
+      border: borderPalette[index],
+    };
+  }
+
+  /** Apply hash-derived colors to a tag pill element via inline style. */
+  function applyTagColor(element, tagText) {
+    const { text, bg, border } = getTagColor(tagText);
+    element.style.color = text;
+    element.style.background = bg;
+    element.style.borderColor = border;
   }
 
   function updateEmptyState() {
@@ -516,8 +515,9 @@
 
   function createTagPill(tagText, turnKey) {
     const pill = document.createElement('span');
-    pill.className = `sp-tag-pill ${getTagToneClass(tagText)}`;
+    pill.className = 'sp-tag-pill';
     pill.textContent = tagText;
+    applyTagColor(pill, tagText);
 
     const removeBtn = document.createElement('button');
     removeBtn.className = 'sp-tag-remove';
@@ -539,7 +539,7 @@
     const input = document.createElement('input');
     input.className = 'sp-tag-input';
     input.type = 'text';
-    input.placeholder = 'Add tag';
+    input.placeholder = 'tag…';
     input.setAttribute('aria-label', 'Add a tag');
 
     input.addEventListener('keydown', (e) => {
@@ -554,6 +554,9 @@
         input.blur();
       }
     });
+
+    // Stop propagation so clicking the input never triggers the card click handler
+    wrapper.addEventListener('click', (e) => e.stopPropagation());
 
     wrapper.appendChild(input);
     return wrapper;
@@ -680,6 +683,7 @@
       empty.className = 'sp-dropdown-empty';
       empty.textContent = 'No tags yet. Add tags to messages.';
       tagDropdown.appendChild(empty);
+      refreshTagFilterBar();
       return;
     }
 
@@ -697,6 +701,52 @@
         tagDropdown.classList.remove('open');
       });
       tagDropdown.appendChild(item);
+    });
+
+    refreshTagFilterBar();
+  }
+
+  /* Render inline chip-checkboxes in the header tag filter bar */
+  function refreshTagFilterBar() {
+    while (tagFilterBar.firstChild) tagFilterBar.removeChild(tagFilterBar.firstChild);
+
+    Array.from(allTags).sort().forEach((tag) => {
+      const { text: tagColor, bg: tagBg, border: tagBorder } = getTagColor(tag);
+      const isActive = activeTagFilters.has(tag);
+
+      const chip = document.createElement('label');
+      chip.className = `sp-tag-chip${isActive ? ' active' : ''}`;
+      chip.title = `Filter by "${tag}"`;
+      // Always apply tinted bg + border; text color from hash
+      chip.style.color = tagColor;
+      chip.style.background = tagBg;
+      chip.style.borderColor = tagBorder;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.className = 'sp-tag-chip-cb';
+      cb.checked = isActive;
+      // Tint the checkbox to match the tag color
+      cb.style.setProperty('--chip-color', tagColor);
+      cb.style.setProperty('--chip-bg', tagBg);
+      cb.style.setProperty('--chip-border', tagBorder);
+
+      cb.addEventListener('change', () => {
+        if (cb.checked) activeTagFilters.add(tag);
+        else activeTagFilters.delete(tag);
+        chip.classList.toggle('active', cb.checked);
+        updateTagBadge();
+        renderTable();
+        updateEmptyState();
+        applyFilters();
+      });
+
+      const labelText = document.createElement('span');
+      labelText.textContent = tag;
+
+      chip.appendChild(cb);
+      chip.appendChild(labelText);
+      tagFilterBar.appendChild(chip);
     });
   }
 
@@ -815,6 +865,7 @@
     await loadData();
     updateSearchUI();
     updateTagBadge();
+    refreshTagFilterBar();
     setTimeout(() => scanMessages(5, 600), 500);
   }
 

@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="sidepanel.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
 </head>
 
 <body>
@@ -16,34 +16,19 @@
     <div class="sp-header-main">
       <div class="sp-title-wrap">
         <h1 class="sp-title">Long Thread Organizer</h1>
-        <span class="sp-count-badge" id="messageCountBadge">0 msgs</span>
+        <div class="sp-title-actions">
+          <span class="sp-count-badge" id="messageCountBadge">0 msgs</span>
+          <button class="sp-icon-btn sp-icon-btn-toolbar" id="btnTrashcan" title="Deleted messages" aria-label="Deleted messages">
+            <svg class="sp-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      <div class="sp-toolbar">
-        <label class="sp-search sp-search-empty" for="searchInput">
-          <svg class="sp-search-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
-          </svg>
-          <input id="searchInput" class="sp-search-input" type="search" placeholder="Search messages" autocomplete="off" />
-          <button class="sp-search-clear" id="searchClearBtn" type="button" aria-label="Clear search">×</button>
-        </label>
-
-        <div class="sp-filter-wrapper" id="tagFilterWrapper">
-          <button class="sp-filter-btn" id="btnFilterTags">
-            <svg class="sp-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" />
-            </svg>
-            <span class="sp-filter-label">Tags</span>
-            <span class="sp-badge" id="tagBadge">0</span>
-          </button>
-          <div class="sp-dropdown" id="tagDropdown"></div>
-        </div>
-
-        <button class="sp-icon-btn sp-icon-btn-toolbar" id="btnTrashcan" title="Deleted messages" aria-label="Deleted messages">
-          <svg class="sp-btn-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z" />
-          </svg>
-        </button>
+      <!-- Tag filter bar: blank line when no tags, inline tag checkboxes when tags exist -->
+      <div class="sp-tag-filter-bar" id="tagFilterBar">
+        <!-- Tag filter chips will be injected here by JS -->
       </div>
     </div>
   </header>
@@ -54,14 +39,34 @@
       <div class="sp-empty-icon-wrap" aria-hidden="true">
         <svg class="sp-empty-icon" viewBox="0 0 64 64">
           <path d="M18 12h28a6 6 0 0 1 6 6v18a6 6 0 0 1-6 6H28l-10 8v-8H18a6 6 0 0 1-6-6V18a6 6 0 0 1 6-6Z" fill="currentColor" />
-          <circle cx="24" cy="27" r="2.5" fill="#1a1a2e" />
-          <circle cx="32" cy="27" r="2.5" fill="#1a1a2e" />
-          <circle cx="40" cy="27" r="2.5" fill="#1a1a2e" />
+          <circle cx="24" cy="27" r="2.5" fill="#FFFBF0" />
+          <circle cx="32" cy="27" r="2.5" fill="#FFFBF0" />
+          <circle cx="40" cy="27" r="2.5" fill="#FFFBF0" />
         </svg>
       </div>
       <p class="sp-empty-title">No messages yet</p>
       <p class="sp-empty-hint">Open a chat on NotebookLM, ChatGPT, or Claude to start organizing.</p>
     </div>
+
+    <!-- Floating search bar at bottom of message list -->
+    <div class="sp-search-float-wrap">
+      <label class="sp-search sp-search-empty" for="searchInput">
+        <svg class="sp-search-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+        </svg>
+        <input id="searchInput" class="sp-search-input" type="search" placeholder="Search messages" autocomplete="off" />
+        <button class="sp-search-clear" id="searchClearBtn" type="button" aria-label="Clear search">×</button>
+      </label>
+    </div>
+  </div>
+
+  <!-- Hidden dropdown used internally by JS for tag filter logic -->
+  <div class="sp-filter-wrapper" id="tagFilterWrapper" style="display:none;">
+    <button class="sp-filter-btn" id="btnFilterTags" style="display:none;">
+      <span class="sp-filter-label">Tags</span>
+      <span class="sp-badge" id="tagBadge">0</span>
+    </button>
+    <div class="sp-dropdown" id="tagDropdown"></div>
   </div>
 
   <script src="sidepanel.js"></script>

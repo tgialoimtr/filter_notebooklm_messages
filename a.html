@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaigonTags for NotebookLM</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Pacifico&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Nunito', 'sans-serif'],
+                        display: ['Pacifico', 'cursive'],
+                    },
+                    colors: {
+                        saigon: {
+                            bg: '#FFFBF0',      // Warm cream background
+                            surface: '#FFFFFF',
+                            text: '#4A3B32',    // Soft dark brown
+                            red: '#E53935',     // Flag red
+                            orange: '#F57C00',  // Warm orange
+                            yellow: '#FFB300',  // Golden yellow
+                            green: '#43A047',   // Leaf green
+                            teal: '#00ACC1',    // Water teal
+                            border: '#F0E6D2'   // Soft border
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(74, 59, 50, 0.1)',
+                        'inner-soft': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.02)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        body {
+            scrollbar-width: thin;
+            scrollbar-color: #F0E6D2 transparent;
+        }
+        body::-webkit-scrollbar {
+            width: 4px;
+        }
+        body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        body::-webkit-scrollbar-thumb {
+            background-color: #F0E6D2;
+            border-radius: 20px;
+        }
+        
+        /* Hide horizontal scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Decorative background pattern */
+        .bg-pattern {
+            background-image: radial-gradient(#F0E6D2 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="bg-saigon-bg text-saigon-text antialiased min-h-screen flex justify-center">
+
+    <!-- Mobile Container -->
+    <div class="w-full max-w-[390px] bg-saigon-bg relative shadow-2xl overflow-x-hidden flex flex-col">
+
+        <!-- Header -->
+        <header id="header-mobile" class="sticky top-0 z-50 bg-saigon-bg/90 backdrop-blur-md border-b border-saigon-border px-5 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-full bg-saigon-orange flex items-center justify-center text-white shadow-sm">
+                    <i class="fa-solid fa-tag text-sm"></i>
+                </div>
+                <span class="font-display text-xl text-saigon-orange tracking-wide mt-1">SaigonTags</span>
+            </div>
+            <button class="bg-saigon-text text-white px-4 py-2 rounded-full text-sm font-bold shadow-md active:scale-95 transition-transform">
+                Get Extension
+            </button>
+        </header>
+
+        <!-- Main Content -->
+        <main id="main-content" class="flex-1 pb-20">
+            
+            <!-- Hero Section -->
+            <section id="section-hero" class="px-5 pt-10 pb-8 relative">
+                <div class="absolute top-0 left-0 w-full h-full bg-pattern opacity-50 z-0 pointer-events-none"></div>
+                
+                <div class="relative z-10 text-center">
+                    <div class="inline-flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-saigon-border shadow-sm mb-6">
+                        <span class="flex h-2 w-2 rounded-full bg-saigon-green"></span>
+                        <span class="text-xs font-bold text-saigon-text/70 uppercase tracking-wider">For NotebookLM</span>
+                    </div>
+                    
+                    <h1 class="text-4xl font-extrabold leading-tight mb-4 text-saigon-text">
+                        Organize notes with <span class="text-saigon-orange font-display font-normal text-5xl block mt-1">lovely tags</span>
+                    </h1>
+                    
+                    <p class="text-base text-saigon-text/80 mb-8 px-2 leading-relaxed">
+                        Transform your chaotic NotebookLM messages into a beautifully organized, color-coded workspace.
+                    </p>
+                    
+                    <button class="w-full bg-saigon-orange hover:bg-orange-600 text-white text-lg font-bold py-4 rounded-2xl shadow-[0_8px_20px_-6px_rgba(245,124,0,0.5)] active:translate-y-1 active:shadow-none transition-all flex items-center justify-center gap-3">
+                        <i class="fa-brands fa-chrome text-xl"></i>
+                        Add to Chrome - It's Free
+                    </button>
+                </div>
+            </section>
+
+            <!-- The "Lovely UI" Showcase (Replacing the dark mode) -->
+            <section id="section-ui-showcase" class="px-5 py-6">
+                <div class="text-center mb-4">
+                    <p class="text-sm font-bold text-saigon-teal uppercase tracking-widest">Goodbye Dark Mode</p>
+                    <h2 class="text-2xl font-bold mt-1">Hello Vibrant Clarity</h2>
+                </div>
+
+                <!-- Mock Extension UI -->
+                <div class="bg-white rounded-[2rem] shadow-soft border border-saigon-border overflow-hidden relative">
+                    <!-- Decorative top bar -->
+                    <div class="h-2 w-full bg-gradient-to-r from-saigon-red via-saigon-yellow to-saigon-teal"></div>
+                    
+                    <div class="p-5">
+                        <div class="flex justify-between items-center mb-5">
+                            <h3 class="font-bold text-lg">Organize Messages</h3>
+                            <button class="w-8 h-8 rounded-full bg-saigon-bg flex items-center justify-center text-saigon-text/50 hover:text-saigon-text">
+                                <i class="fa-solid fa-ellipsis-vertical"></i>
+                            </button>
+                        </div>
+
+                        <!-- Filter Bar -->
+                        <div class="flex gap-2 mb-6 overflow-x-auto no-scrollbar pb-1">
+                            <button class="shrink-0 bg-saigon-bg border border-saigon-border px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 text-saigon-text">
+                                <i class="fa-solid fa-filter text-saigon-teal text-xs"></i> All Tags
+                            </button>
+                            <button class="shrink-0 bg-white border border-saigon-border px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 text-saigon-text/60">
+                                <i class="fa-solid fa-trash-can text-saigon-red text-xs"></i> Trash
+                            </button>
+                        </div>
+
+                        <!-- Message List -->
+                        <div class="space-y-3">
+                            <!-- Item 1 -->
+                            <div class="group p-3 rounded-2xl bg-saigon-bg/50 border border-transparent hover:border-saigon-border transition-colors flex flex-col gap-2">
+                                <p class="text-sm font-medium line-clamp-1">give detailed summary of this source</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="inline-flex items-center gap-1.5 bg-saigon-green/10 text-saigon-green px-2.5 py-1 rounded-lg text-xs font-bold">
+                                        <i class="fa-solid fa-book-open text-[10px]"></i> Research
+                                    </span>
+                                    <button class="text-saigon-text/30 hover:text-saigon-red"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Item 2 -->
+                            <div class="group p-3 rounded-2xl bg-saigon-bg/50 border border-transparent hover:border-saigon-border transition-colors flex flex-col gap-2">
+                                <p class="text-sm font-medium line-clamp-1">give a longer more detailed summary</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="inline-flex items-center gap-1.5 bg-saigon-orange/10 text-saigon-orange px-2.5 py-1 rounded-lg text-xs font-bold">
+                                        <i class="fa-solid fa-pen-nib text-[10px]"></i> Drafts
+                                    </span>
+                                    <button class="text-saigon-text/30 hover:text-saigon-red"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+
+                            <!-- Item 3 -->
+                            <div class="group p-3 rounded-2xl bg-saigon-bg/50 border border-transparent hover:border-saigon-border transition-colors flex flex-col gap-2">
+                                <p class="text-sm font-medium line-clamp-1">trong nguồn trên tác giả để cập những...</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="inline-flex items-center gap-1.5 bg-saigon-red/10 text-saigon-red px-2.5 py-1 rounded-lg text-xs font-bold">
+                                        <i class="fa-solid fa-star text-[10px]"></i> Important
+                                    </span>
+                                    <button class="text-saigon-text/30 hover:text-saigon-red"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Add Tag Button -->
+                        <button class="w-full mt-4 py-3 border-2 border-dashed border-saigon-border rounded-2xl text-saigon-text/50 font-bold text-sm flex items-center justify-center gap-2 hover:bg-saigon-bg hover:text-saigon-text transition-colors">
+                            <i class="fa-solid fa-plus"></i> Create New Tag
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Inspiration Section (Using provided image) -->
+            <section id="section-inspiration" class="px-5 py-10">
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-saigon-border text-center">
+                    <h3 class="font-display text-2xl text-saigon-red mb-2">Inspired by Vietnam</h3>
+                    <p class="text-sm text-saigon-text/70 mb-6">We ditched the boring dark mode for colors inspired by the vibrant streets, culture, and landscapes of Saigon.</p>
+                    
+                    <div class="rounded-2xl overflow-hidden border-4 border-saigon-bg shadow-inner">
+                        <img src="https://nivbeqiuhotuxbmcvuxt.supabase.co/storage/v1/object/public/project-images/673bf4ce-6ff0-4763-a36d-41ff2f04bec4/0479542a-a51d-4f98-adc2-d3d25d0e41ae.png" alt="Vietnam Illustrations" class="w-full h-auto object-cover scale-105">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features Grid -->
+            <section id="section-features" class="px-5 py-6">
+                <h2 class="text-2xl font-bold mb-6 text-center">Why you'll love it</h2>
+                
+                <div class="space-y-4">
+                    <!-- Feature 1 -->
+                    <div class="bg-white p-5 rounded-3xl shadow-sm border border-saigon-border flex gap-4 items-start">
+                        <div class="w-12 h-12 shrink-0 rounded-2xl bg-saigon-yellow/20 flex items-center justify-center text-saigon-yellow">
+                            <i class="fa-solid fa-palette text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-1">Beautiful Colors</h4>
+                            <p class="text-sm text-saigon-text/70 leading-relaxed">Assign vibrant, distinct colors to your tags to visually organize your research at a glance.</p>
+                        </div>
+                    </div>
+
+                    <!-- Feature 2 -->
+                    <div class="bg-white p-5 rounded-3xl shadow-sm border border-saigon-border flex gap-4 items-start">
+                        <div class="w-12 h-12 shrink-0 rounded-2xl bg-saigon-teal/20 flex items-center justify-center text-saigon-teal">
+                            <i class="fa-solid fa-magnifying-glass text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-1">Instant Filtering</h4>
+                            <p class="text-sm text-saigon-text/70 leading-relaxed">Click any tag to instantly filter your NotebookLM messages. Find exactly what you need, fast.</p>
+                        </div>
+                    </div>
+
+                    <!-- Feature 3 -->
+                    <div class="bg-white p-5 rounded-3xl shadow-sm border border-saigon-border flex gap-4 items-start">
+                        <div class="w-12 h-12 shrink-0 rounded-2xl bg-saigon-green/20 flex items-center justify-center text-saigon-green">
+                            <i class="fa-solid fa-face-smile text-xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg mb-1">Lovely Interface</h4>
+                            <p class="text-sm text-saigon-text/70 leading-relaxed">A UI designed to bring joy to your workflow, replacing dull grays with friendly, rounded elements.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Final CTA -->
+            <section id="section-cta" class="px-5 py-12 text-center">
+                <div class="w-16 h-16 mx-auto bg-white rounded-full shadow-md flex items-center justify-center mb-6 border border-saigon-border">
+                    <i class="fa-solid fa-heart text-saigon-red text-2xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold mb-4">Ready to organize?</h2>
+                <p class="text-saigon-text/70 mb-8 px-4">Join thousands of researchers making their NotebookLM beautiful and functional.</p>
+                
+                <button class="w-full bg-saigon-text hover:bg-black text-white text-lg font-bold py-4 rounded-2xl shadow-lg active:translate-y-1 active:shadow-none transition-all">
+                    Install SaigonTags Now
+                </button>
+                <p class="text-xs text-saigon-text/50 mt-4 font-semibold uppercase tracking-wider">No credit card required</p>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white border-t border-saigon-border py-6 px-5 text-center">
+            <div class="flex justify-center gap-6 mb-4">
+                <a href="#" class="text-saigon-text/50 hover:text-saigon-orange transition-colors"><i class="fa-brands fa-twitter text-xl"></i></a>
+                <a href="#" class="text-saigon-text/50 hover:text-saigon-orange transition-colors"><i class="fa-brands fa-github text-xl"></i></a>
+                <a href="#" class="text-saigon-text/50 hover:text-saigon-orange transition-colors"><i class="fa-solid fa-envelope text-xl"></i></a>
+            </div>
+            <p class="text-xs text-saigon-text/50 font-semibold">© 2025 SaigonTags. Crafted with <i class="fa-solid fa-heart text-saigon-red mx-1"></i> for NotebookLM.</p>
+        </footer>
+
+    </div>
+
+</body>
+</html>

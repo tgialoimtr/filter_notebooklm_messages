@@ -1,5 +1,6 @@
 /* ============================================
-   NotebookLM Sidebar Panel Styles
+   NotebookLM Sidebar Panel Styles — Saigon Light Theme
+   Inspired by the SaigonTags UI in a.html
    ============================================ */
 
 *, *::before, *::after {
@@ -9,42 +10,49 @@
 }
 
 :root {
-  --bg-primary: #1a1a2e;
-  --bg-secondary: #16213e;
-  --bg-surface: #1e2a45;
-  --bg-hover: #263454;
-  --bg-active: #2d3e5e;
+  /* ── Saigon Palette ── */
+  --bg-primary:    #FFFBF0;   /* warm cream */
+  --bg-surface:    #FFFFFF;
+  --bg-hover:      rgba(240, 230, 210, 0.5);
+  --bg-card:       rgba(255, 251, 240, 0.6);
 
-  --text-primary: #e0e6f0;
-  --text-secondary: #8a94a8;
-  --text-muted: #5a6478;
+  --text-primary:  #4A3B32;   /* soft dark brown */
+  --text-secondary:#7A6B60;
+  --text-muted:    #A89C94;
 
-  --accent-blue: #6c8fff;
-  --accent-blue-dim: rgba(108, 143, 255, 0.15);
-  --accent-blue-hover: rgba(108, 143, 255, 0.25);
+  --saigon-red:    #E53935;
+  --saigon-orange: #F57C00;
+  --saigon-yellow: #FFB300;
+  --saigon-green:  #43A047;
+  --saigon-teal:   #00ACC1;
+  --saigon-border: #F0E6D2;
 
-  --tag-bg: rgba(108, 143, 255, 0.18);
-  --tag-border: rgba(108, 143, 255, 0.35);
-  --tag-text: #8ab4f8;
+  /* accent for active states → orange */
+  --accent:        #F57C00;
+  --accent-dim:    rgba(245, 124, 0, 0.12);
+  --accent-hover:  rgba(245, 124, 0, 0.2);
 
-  --source-bg: rgba(129, 199, 132, 0.18);
-  --source-border: rgba(129, 199, 132, 0.35);
-  --source-text: #81c784;
+  /* tag colours */
+  --tag-bg:        rgba(245, 124, 0, 0.12);
+  --tag-border:    rgba(245, 124, 0, 0.30);
+  --tag-text:      #F57C00;
 
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-medium: rgba(255, 255, 255, 0.1);
+  --border-subtle: #F0E6D2;
+  --border-medium: #E0D0BC;
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm:   6px;
+  --radius-md:   12px;
+  --radius-lg:   16px;
+  --radius-xl:   20px;
   --radius-pill: 100px;
 
-  --shadow-dropdown: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-soft:     0 10px 40px -10px rgba(74, 59, 50, 0.10);
+  --shadow-dropdown: 0 8px 32px rgba(74, 59, 50, 0.14), 0 2px 8px rgba(74, 59, 50, 0.08);
 
-  --transition-fast: 0.15s ease;
+  --transition-fast:   0.15s ease;
   --transition-normal: 0.25s ease;
 
-  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 html, body {
@@ -62,17 +70,28 @@ body {
   flex-direction: column;
 }
 
+/* ─── Header ─────────────────────────────────── */
 .sp-header {
-  padding: 12px 10px 10px;
+  padding: 0 0 10px;
   border-bottom: 1px solid var(--border-subtle);
-  background: linear-gradient(180deg, rgba(30, 42, 69, 0.95), var(--bg-primary));
+  background: var(--bg-surface);
   flex-shrink: 0;
+}
+
+/* Rainbow top stripe matching a.html gradient bar */
+.sp-header::before {
+  content: '';
+  display: block;
+  height: 3px;
+  width: 100%;
+  background: linear-gradient(to right, var(--saigon-red), var(--saigon-yellow), var(--saigon-teal));
 }
 
 .sp-header-main {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding: 10px 12px 0;
 }
 
 .sp-title-wrap {
@@ -84,10 +103,18 @@ body {
 
 .sp-title {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 800;
   color: var(--text-primary);
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
+}
+
+/* ─── Title-row right side: count badge + trash ── */
+.sp-title-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .sp-count-badge {
@@ -97,40 +124,131 @@ body {
   padding: 3px 8px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-secondary);
+  background: var(--bg-primary);
+  color: var(--text-muted);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.sp-toolbar {
+/* ─── Tag Filter Bar (replaces toolbar) ──────── */
+.sp-tag-filter-bar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-height: 28px;   /* blank line placeholder when no tags */
+  padding: 0 0 2px;
 }
 
+/* ─── Inline tag chip (checkbox + label) ─────── */
+/* Matches a.html: bg-white border border-saigon-border px-4 py-2 rounded-full text-sm font-semibold */
+/* Text color is applied via JS inline style (hash-computed saigon color). */
+.sp-tag-chip {
+  --chip-color:  #7A6B60;   /* fallback; overridden inline by JS */
+  --chip-bg:     rgba(120, 107, 96, 0.10);
+  --chip-border: rgba(120, 107, 96, 0.25);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;              /* gap-2 → 6px (scaled for sidebar) */
+  padding: 4px 11px;     /* py-2 px-4 scaled — sidebar is narrow */
+  border-radius: var(--radius-pill); /* rounded-full */
+  border: 1px solid #F0E6D2;         /* border-saigon-border */
+  background: #ffffff;               /* bg-white */
+  /* color set inline by JS */
+  font-size: 11.5px;     /* text-sm scaled */
+  font-weight: 600;      /* font-semibold */
+  font-family: var(--font);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color var(--transition-fast), background var(--transition-fast), box-shadow var(--transition-fast);
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(74, 59, 50, 0.06);
+}
+
+.sp-tag-chip:hover {
+  border-color: var(--chip-border);
+  background: var(--chip-bg);
+  box-shadow: 0 2px 6px rgba(74, 59, 50, 0.10);
+}
+
+.sp-tag-chip.active {
+  /* bg/borderColor set inline by JS when toggled; add a subtle shadow */
+  box-shadow: 0 2px 8px rgba(74, 59, 50, 0.12);
+}
+
+/* Hide native checkbox, render as a small square indicator */
+.sp-tag-chip-cb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  border: 1.5px solid #E0D0BC;
+  background: transparent;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.sp-tag-chip:hover .sp-tag-chip-cb {
+  border-color: var(--chip-color);
+}
+
+.sp-tag-chip-cb:checked {
+  background: var(--chip-color);
+  border-color: var(--chip-color);
+}
+
+.sp-tag-chip-cb:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  width: 3px;
+  height: 6px;
+  border: 1.5px solid #fff;
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+/* ─── Floating search wrapper ────────────────── */
+.sp-search-float-wrap {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 10px 10px;
+  background: linear-gradient(to top, var(--saigon-orange) 60%, transparent);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Search ─────────────────────────────────── */
 .sp-search {
-  flex: 1 1 140px;
+  pointer-events: all;
+  flex: 1;
   min-width: 0;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 10px;
+  padding: 7px 12px;
   border-radius: var(--radius-pill);
-  border: 1px solid var(--border-medium);
-  background: rgba(255, 255, 255, 0.03);
-  transition: border-color var(--transition-fast), background var(--transition-fast), max-width var(--transition-normal), box-shadow var(--transition-fast);
-  max-width: 180px;
+  border: 1px solid rgba(255,255,255,0.6);
+  background: #ffffff;
+  box-shadow: 0 2px 12px rgba(74, 59, 50, 0.18);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .sp-search:focus-within {
-  background: rgba(108, 143, 255, 0.1);
-  border-color: var(--accent-blue);
-  max-width: 100%;
-  box-shadow: inset 0 0 0 1px rgba(108, 143, 255, 0.25);
+  border-color: var(--saigon-orange);
+  box-shadow: 0 2px 16px rgba(245, 124, 0, 0.25);
 }
 
 .sp-search-icon {
@@ -148,11 +266,14 @@ body {
   background: transparent;
   color: var(--text-primary);
   font-size: 12px;
+  font-family: var(--font);
+  font-weight: 600;
   outline: none;
 }
 
 .sp-search-input::placeholder {
   color: var(--text-muted);
+  font-weight: 600;
 }
 
 .sp-search-clear {
@@ -170,6 +291,7 @@ body {
   display: block;
 }
 
+/* ─── Filter Wrapper ─────────────────────────── */
 .sp-filter-wrapper {
   position: relative;
   display: flex;
@@ -177,19 +299,20 @@ body {
   overflow: visible;
 }
 
+/* ─── Filter Button ──────────────────────────── */
 .sp-filter-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 7px 10px;
+  gap: 5px;
+  padding: 7px 12px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-medium);
-  background: var(--bg-surface);
+  background: var(--bg-primary);
   color: var(--text-secondary);
   font-size: 11px;
   font-family: var(--font);
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
@@ -198,23 +321,24 @@ body {
 
 .sp-filter-btn:hover {
   background: var(--bg-hover);
-  border-color: var(--tag-border);
-  color: var(--text-primary);
+  border-color: var(--saigon-orange);
+  color: var(--saigon-orange);
 }
 
 .sp-filter-btn.active {
-  background: var(--accent-blue-dim);
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .sp-btn-icon {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   fill: currentColor;
   flex-shrink: 0;
 }
 
+/* ─── Badge ──────────────────────────────────── */
 .sp-badge {
   display: none;
   align-items: center;
@@ -222,10 +346,10 @@ body {
   min-width: 17px;
   height: 17px;
   border-radius: 9px;
-  background: var(--accent-blue);
+  background: var(--saigon-orange);
   color: #fff;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 800;
   padding: 0 5px;
 }
 
@@ -233,13 +357,14 @@ body {
   display: inline-flex;
 }
 
+/* ─── Toolbar icon button ────────────────────── */
 .sp-icon-btn-toolbar {
   width: 32px;
   height: 32px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border-medium);
-  background: var(--bg-surface);
-  color: var(--text-secondary);
+  background: var(--bg-primary);
+  color: var(--text-muted);
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -250,16 +375,17 @@ body {
 
 .sp-icon-btn-toolbar:hover {
   background: var(--bg-hover);
-  border-color: var(--tag-border);
-  color: var(--text-primary);
+  border-color: var(--saigon-orange);
+  color: var(--saigon-orange);
 }
 
 .sp-icon-btn-toolbar.active {
-  background: var(--accent-blue-dim);
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
+/* ─── Dropdown ───────────────────────────────── */
 .sp-dropdown {
   position: absolute;
   top: calc(100% + 6px);
@@ -284,7 +410,7 @@ body {
 
 @keyframes sp-slide-down {
   from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .sp-dropdown-empty {
@@ -292,6 +418,7 @@ body {
   text-align: center;
   color: var(--text-muted);
   font-size: 12px;
+  font-weight: 600;
 }
 
 .sp-dropdown-item {
@@ -303,22 +430,23 @@ body {
   transition: background var(--transition-fast);
   user-select: none;
   font-size: 12px;
+  font-weight: 600;
   color: var(--text-secondary);
 }
 
 .sp-dropdown-item:hover {
-  background: var(--bg-hover);
+  background: var(--bg-primary);
 }
 
 .sp-dropdown-item.checked {
-  color: var(--accent-blue);
+  color: var(--saigon-orange);
 }
 
 .sp-dropdown-checkbox {
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  border: 2px solid var(--text-muted);
+  border: 2px solid var(--border-medium);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -327,8 +455,8 @@ body {
 }
 
 .sp-dropdown-item.checked .sp-dropdown-checkbox {
-  background: var(--accent-blue);
-  border-color: var(--accent-blue);
+  background: var(--saigon-orange);
+  border-color: var(--saigon-orange);
 }
 
 .sp-dropdown-check-icon {
@@ -342,22 +470,29 @@ body {
   display: block;
 }
 
-.sp-dropdown::-webkit-scrollbar { width: 5px; }
+.sp-dropdown::-webkit-scrollbar { width: 4px; }
 .sp-dropdown::-webkit-scrollbar-track { background: transparent; }
-.sp-dropdown::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+.sp-dropdown::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 20px; }
 
+/* ─── Table / List wrapper ───────────────────── */
 .sp-table-wrapper {
+  position: relative;
   flex: 1;
   overflow: auto;
-  padding: 6px 0 10px;
+  padding: 8px 0 0;
   scroll-behavior: smooth;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
 }
 
 .sp-list {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
+/* ─── Message Card ───────────────────────────── */
 .sp-message-card {
   position: relative;
   z-index: 0;
@@ -366,46 +501,24 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin: 8px 10px;
-  padding: 12px 12px 10px;
-  border: 1px solid var(--border-subtle);
-  border-left: 2px solid transparent;
-  border-radius: var(--radius-md);
-  background: var(--bg-surface);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
-  transition: border-color var(--transition-fast), transform var(--transition-fast), background var(--transition-fast);
+  margin: 5px 10px;
+  padding: 11px 12px 10px;
+  border: 1px solid #F0E6D2;        /* always visible — saigon-border */
+  border-radius: var(--radius-xl);
+  background: #ffffff;              /* always white */
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
   will-change: transform;
 }
 
 .sp-message-card:hover {
   z-index: 5;
-  border-left-color: var(--accent-blue);
-  background: rgba(108, 143, 255, 0.06);
   transform: translateY(-1px);
-}
-
-.sp-message-card.selected {
-  background: rgba(108, 143, 255, 0.14);
-  border-color: rgba(108, 143, 255, 0.22);
+  box-shadow: var(--shadow-soft);
+  border-color: var(--border-medium);
 }
 
 .sp-message-card.selected .sp-message-text {
-  font-weight: 700;
-}
-
-.sp-message-card__main {
-  display: flex;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-}
-
-.sp-message-card__index {
-  flex-shrink: 0;
-  padding-top: 2px;
-  font-size: 11px;
-  color: var(--text-muted);
-  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-weight: 800;
 }
 
 .sp-message-card__body {
@@ -415,6 +528,7 @@ body {
 
 .sp-message-text {
   font-size: 13px;
+  font-weight: 600;
   color: var(--text-primary);
   line-height: 1.6;
   display: -webkit-box;
@@ -428,17 +542,52 @@ body {
 .sp-message-card__tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 5px;
+  margin-top: 7px;
 }
 
+/* ─── Card actions (column) ──────────────────── */
 .sp-message-card__actions {
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
   flex-shrink: 0;
 }
 
+/* Bottom row: circle-number + delete */
+.sp-message-card__actions-bottom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ─── Index circle button ────────────────────── */
+.sp-index-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #43A047;   /* saigon-green */
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: var(--font);
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast), transform var(--transition-fast);
+  line-height: 1;
+}
+
+.sp-index-btn:hover {
+  background: #388E3C;
+  transform: scale(1.1);
+}
+
+/* ─── Icon wrapper / button ──────────────────── */
 .sp-icon-wrapper {
   position: relative;
   z-index: 5;
@@ -452,7 +601,7 @@ body {
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-muted);
@@ -468,27 +617,30 @@ body {
 }
 
 .sp-icon-tag:hover {
-  color: var(--tag-text);
+  color: var(--saigon-orange);
 }
 
 .sp-icon-delete:hover {
-  color: #ff0000;
-  background: rgba(255, 82, 82, 0.1);
+  color: var(--saigon-red);
+  background: rgba(229, 57, 53, 0.08);
 }
 
+/* ─── Recover button ─────────────────────────── */
 .sp-btn-recover {
   padding: 4px 10px;
-  background: var(--source-bg);
-  color: var(--source-text);
-  border: 1px solid var(--source-border);
+  background: rgba(67, 160, 71, 0.10);
+  color: var(--saigon-green);
+  border: 1px solid rgba(67, 160, 71, 0.25);
   border-radius: var(--radius-pill);
   font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
 .sp-btn-recover:hover {
-  background: rgba(129, 199, 132, 0.3);
+  background: rgba(67, 160, 71, 0.20);
 }
 
 .sp-icon-svg {
@@ -496,6 +648,7 @@ body {
   height: 16px;
 }
 
+/* ─── Icon badge ─────────────────────────────── */
 .sp-icon-badge {
   position: absolute;
   top: -4px;
@@ -504,7 +657,7 @@ body {
   height: 15px;
   border-radius: 8px;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: 800;
   font-family: var(--font);
   display: flex;
   align-items: center;
@@ -514,10 +667,11 @@ body {
 }
 
 .sp-icon-badge-tag {
-  background: var(--accent-blue);
+  background: var(--saigon-orange);
   color: #fff;
 }
 
+/* ─── Popover ────────────────────────────────── */
 .sp-popover {
   position: absolute;
   top: calc(100% + 4px);
@@ -529,7 +683,7 @@ body {
   max-width: 260px;
   background: var(--bg-surface);
   border: 1px solid var(--border-medium);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-dropdown);
   padding: 8px;
   display: none;
@@ -546,88 +700,40 @@ body {
 
 .sp-popover-empty {
   font-size: 11px;
+  font-weight: 600;
   color: var(--text-muted);
   padding: 4px 0;
   width: 100%;
   text-align: center;
 }
 
+/* ─── Tag Pill ───────────────────────────────── */
+/* Styled after a.html: inline-flex, gap-1.5, px-2.5 py-1, rounded-lg, text-xs font-bold */
+/* Text color, background, and border-color are applied via JS inline styles (hash-based). */
 .sp-tag-pill {
-  --tag-pill-bg: rgba(108, 143, 255, 0.16);
-  --tag-pill-border: rgba(108, 143, 255, 0.35);
-  --tag-pill-text: #bcd0ff;
-
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  font-size: 10px;
-  font-weight: 600;
+  gap: 6px;           /* gap-1.5 → 6px */
+  padding: 4px 10px;  /* py-1 px-2.5 → 4px 10px */
+  border-radius: 8px; /* rounded-lg */
+  font-size: 11px;    /* text-xs */
+  font-weight: 700;   /* font-bold */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 100%;
   cursor: default;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
-  background: var(--tag-pill-bg);
-  color: var(--tag-pill-text);
-  border: 1px solid var(--tag-pill-border);
-}
-
-.sp-tag-pill--blue {
-  --tag-pill-bg: rgba(108, 143, 255, 0.16);
-  --tag-pill-border: rgba(108, 143, 255, 0.35);
-  --tag-pill-text: #bcd0ff;
-}
-
-.sp-tag-pill--teal {
-  --tag-pill-bg: rgba(69, 185, 165, 0.16);
-  --tag-pill-border: rgba(69, 185, 165, 0.35);
-  --tag-pill-text: #a9e8dc;
-}
-
-.sp-tag-pill--violet {
-  --tag-pill-bg: rgba(158, 127, 255, 0.16);
-  --tag-pill-border: rgba(158, 127, 255, 0.35);
-  --tag-pill-text: #d0c1ff;
-}
-
-.sp-tag-pill--rose {
-  --tag-pill-bg: rgba(255, 132, 169, 0.16);
-  --tag-pill-border: rgba(255, 132, 169, 0.35);
-  --tag-pill-text: #ffc4d7;
-}
-
-.sp-tag-pill--mint {
-  --tag-pill-bg: rgba(96, 190, 131, 0.16);
-  --tag-pill-border: rgba(96, 190, 131, 0.35);
-  --tag-pill-text: #c6efd0;
-}
-
-.sp-tag-pill--amber {
-  --tag-pill-bg: rgba(255, 182, 92, 0.16);
-  --tag-pill-border: rgba(255, 182, 92, 0.35);
-  --tag-pill-text: #ffd9a8;
-}
-
-.sp-tag-pill--cyan {
-  --tag-pill-bg: rgba(86, 187, 255, 0.16);
-  --tag-pill-border: rgba(86, 187, 255, 0.35);
-  --tag-pill-text: #bce8ff;
-}
-
-.sp-tag-pill--lilac {
-  --tag-pill-bg: rgba(206, 155, 255, 0.16);
-  --tag-pill-border: rgba(206, 155, 255, 0.35);
-  --tag-pill-text: #e6caff;
+  border: 1px solid transparent;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  font-family: var(--font);
 }
 
 .sp-tag-pill:hover {
   transform: translateY(-1px);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  box-shadow: 0 2px 6px rgba(74, 59, 50, 0.10);
 }
 
+/* ─── Tag remove ─────────────────────────────── */
 .sp-tag-remove {
   display: inline-flex;
   align-items: center;
@@ -648,15 +754,16 @@ body {
 
 .sp-tag-remove:hover {
   opacity: 1;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(74, 59, 50, 0.10);
 }
 
+/* ─── Tag add wrapper (inline in action strip) ── */
 .sp-tag-add-wrapper {
   display: inline-flex;
   align-items: center;
-  border: 1px dashed var(--tag-border);
+  border: 1.5px dashed var(--border-medium);
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.04);
+  background: transparent;
   padding: 3px 8px;
   transition: all var(--transition-fast);
   cursor: text;
@@ -664,127 +771,44 @@ body {
 }
 
 .sp-tag-add-wrapper:hover {
-  border-color: var(--tag-text);
-  background: rgba(108, 143, 255, 0.08);
+  border-color: var(--saigon-orange);
+  background: rgba(245, 124, 0, 0.06);
 }
 
 .sp-tag-add-wrapper:focus-within {
-  border-color: var(--accent-blue);
-  background: rgba(108, 143, 255, 0.12);
-  box-shadow: 0 0 0 2px rgba(108, 143, 255, 0.15);
+  border-color: var(--saigon-orange);
+  background: rgba(245, 124, 0, 0.08);
+  box-shadow: 0 0 0 2px rgba(245, 124, 0, 0.12);
 }
 
 .sp-tag-add-wrapper::before {
   content: '+';
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(108, 143, 255, 0.5);
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(245, 124, 0, 0.5);
   margin-right: 3px;
+  line-height: 1;
 }
 
 .sp-tag-input {
-  min-width: 84px;
-  max-width: 140px;
+  min-width: 36px;
+  max-width: 72px;
   border: none;
   outline: none;
   background: transparent;
-  color: var(--tag-text);
+  color: var(--saigon-orange);
   font-size: 11px;
+  font-weight: 700;
   font-family: var(--font);
-  padding: 3px 0;
+  padding: 2px 0;
 }
 
 .sp-tag-input::placeholder {
-  color: rgba(108, 143, 255, 0.45);
+  color: rgba(245, 124, 0, 0.40);
   font-style: italic;
 }
 
-.sp-empty-state {
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 220px;
-  padding: 24px 18px 40px;
-  text-align: center;
-}
-
-.sp-empty-state.visible {
-  display: flex;
-}
-
-.sp-empty-icon-wrap {
-  display: grid;
-  place-items: center;
-  width: 64px;
-  height: 64px;
-  border-radius: 20px;
-  background: rgba(108, 143, 255, 0.12);
-  color: var(--accent-blue);
-  animation: sp-pulse 2.6s ease-in-out infinite;
-}
-
-.sp-empty-icon {
-  width: 34px;
-  height: 34px;
-}
-
-.sp-empty-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.sp-empty-hint {
-  max-width: 220px;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--text-secondary);
-}
-
-@keyframes sp-pulse {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-
-.sp-row-hidden,
-.sp-card-hidden {
-  display: none;
-}
-
-@media (max-width: 360px) {
-  .sp-toolbar {
-    flex-wrap: wrap;
-  }
-
-  .sp-search {
-    flex-basis: 100%;
-    max-width: 100%;
-  }
-}
-
-/* ─── Source Pill (inside popover) ─────────────────── */
-.sp-source-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  border-radius: var(--radius-pill);
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  cursor: default;
-  transition: all var(--transition-fast);
-  background: var(--source-bg);
-  color: var(--source-text);
-  border: 1px solid var(--source-border);
-}
-
-.sp-source-pill:hover {
-  background: rgba(129, 199, 132, 0.3);
-}
-
-/* ─── Empty State ─────────────────────────────────── */
+/* ─── Empty State ────────────────────────────── */
 .sp-empty-state {
   display: none;
   flex-direction: column;
@@ -800,22 +824,77 @@ body {
   display: flex;
 }
 
+.sp-empty-icon-wrap {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: rgba(245, 124, 0, 0.10);
+  color: var(--saigon-orange);
+  animation: sp-pulse 2.6s ease-in-out infinite;
+}
+
 .sp-empty-icon {
   width: 48px;
   height: 48px;
-  color: var(--text-muted);
-  opacity: 0.5;
-  margin-bottom: 8px;
+  color: var(--saigon-orange);
+  opacity: 0.7;
+  margin-bottom: 0;
+}
+
+.sp-empty-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
 .sp-empty-hint {
+  max-width: 220px;
   font-size: 12px;
+  font-weight: 600;
+  line-height: 1.6;
   color: var(--text-muted);
-  opacity: 0.7;
 }
 
-/* ─── Scrollbar for table wrapper ─────────────────── */
-.sp-table-wrapper::-webkit-scrollbar { width: 5px; height: 5px; }
-.sp-table-wrapper::-webkit-scrollbar-track { background: transparent; }
-.sp-table-wrapper::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+@keyframes sp-pulse {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-3px); }
+}
 
+/* ─── Source Pill ────────────────────────────── */
+.sp-source-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: default;
+  transition: all var(--transition-fast);
+  background: rgba(67, 160, 71, 0.12);
+  color: #2E7D32;
+  border: 1px solid rgba(67, 160, 71, 0.28);
+}
+
+.sp-source-pill:hover {
+  background: rgba(67, 160, 71, 0.22);
+}
+
+/* ─── Utility ────────────────────────────────── */
+.sp-row-hidden,
+.sp-card-hidden {
+  display: none;
+}
+
+/* ─── Scrollbar for table wrapper ───────────── */
+.sp-table-wrapper::-webkit-scrollbar { width: 4px; height: 4px; }
+.sp-table-wrapper::-webkit-scrollbar-track { background: transparent; }
+.sp-table-wrapper::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 20px; }
+
+@media (max-width: 360px) {
+  .sp-tag-filter-bar {
+    flex-wrap: wrap;
+  }
+}
