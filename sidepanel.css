@@ -139,8 +139,13 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
-  min-height: 28px;   /* blank line placeholder when no tags */
+  /* no min-height — bar collapses when there are no tags */
   padding: 0 0 2px;
+}
+
+/* Only add spacing when tags are present */
+.sp-tag-filter-bar:not(:empty) {
+  min-height: 28px;
 }
 
 /* ─── Inline tag chip (checkbox + label) ─────── */
@@ -224,7 +229,7 @@ body {
   left: 0;
   right: 0;
   padding: 8px 10px 10px;
-  background: linear-gradient(to top, var(--saigon-orange) 60%, transparent);
+  background: linear-gradient(to top, var(--bg-primary) 70%, transparent);
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -897,4 +902,207 @@ body {
   .sp-tag-filter-bar {
     flex-wrap: wrap;
   }
+}
+
+/* ═══════════════════════════════════════════════
+   Note Editor Panel  (.ne-*)
+   ═══════════════════════════════════════════════ */
+
+/* Outer panel — fills the same space as .sp-table-wrapper */
+.ne-panel {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  animation: sp-slide-down 0.18s ease;
+}
+
+/* ─── Header ───────────────────────────────── */
+.ne-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.ne-return-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px 5px 8px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-medium);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+}
+
+.ne-return-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--saigon-orange);
+  color: var(--saigon-orange);
+}
+
+.ne-icon-svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.ne-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ne-save-indicator {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+  min-width: 44px;
+  text-align: right;
+  transition: color var(--transition-fast);
+}
+
+.ne-save-indicator.saving { color: var(--saigon-orange); }
+.ne-save-indicator.saved  { color: var(--saigon-green);  }
+
+/* ─── Toolbar ──────────────────────────────── */
+.ne-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.ne-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.ne-tool-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-medium);
+  color: var(--text-primary);
+}
+
+.ne-tool-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ─── Editor area ──────────────────────────── */
+.ne-editor {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 80px;   /* bottom padding so text doesn't hide behind nothing */
+  outline: none;
+  background: #ffffff;
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  caret-color: var(--saigon-orange);
+  word-break: break-word;
+}
+
+/* Placeholder via data attribute */
+.ne-editor:empty::before,
+.ne-editor p:only-child:empty::before {
+  content: attr(data-placeholder);
+  color: var(--text-muted);
+  font-style: italic;
+  pointer-events: none;
+}
+
+/* Typography inside editor */
+.ne-editor h1,
+.ne-editor h2,
+.ne-editor h3,
+.ne-editor h4,
+.ne-editor h5,
+.ne-editor h6 {
+  color: var(--text-primary);
+  font-weight: 800;
+  line-height: 1.3;
+  margin: 10px 0 4px;
+}
+
+.ne-editor h1 { font-size: 18px; }
+.ne-editor h2 { font-size: 16px; }
+.ne-editor h3 { font-size: 14px; }
+
+.ne-editor p  { margin: 4px 0; }
+
+.ne-editor strong { font-weight: 800; color: var(--text-primary); }
+.ne-editor em     { font-style: italic; }
+
+.ne-editor ul,
+.ne-editor ol {
+  padding-left: 20px;
+  margin: 4px 0;
+}
+
+.ne-editor li {
+  margin: 2px 0;
+  line-height: 1.6;
+}
+
+.ne-editor ul li { list-style-type: disc; }
+.ne-editor ol li { list-style-type: decimal; }
+
+/* Scrollbar */
+.ne-editor::-webkit-scrollbar        { width: 4px; }
+.ne-editor::-webkit-scrollbar-track  { background: transparent; }
+.ne-editor::-webkit-scrollbar-thumb  { background: var(--border-medium); border-radius: 20px; }
+
+/* ─── Index button: note-present dot ──────── */
+.sp-index-btn.has-note {
+  position: relative;
+}
+
+.sp-index-btn.has-note::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--saigon-orange);
+  border: 1.5px solid #fff;
 }

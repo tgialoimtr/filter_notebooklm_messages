@@ -14,6 +14,7 @@
 
   let messages = [];
   let messageTags = {};
+  let messageNotes = {};   // turnKey → markdown string
   let allTags = new Set();
   let activeTagFilters = new Set();
   let tagDropdownOpen = false;
@@ -27,6 +28,8 @@
   let navigationLock = null;
   let lastVisibleKeys = [];
 
+  let noteEditor = null;
+
   const listBody = document.getElementById('messageListBody');
   const emptyState = document.getElementById('emptyState');
   const btnFilterTags = document.getElementById('btnFilterTags');
@@ -37,6 +40,8 @@
   const searchClearBtn = document.getElementById('searchClearBtn');
   const messageCountBadge = document.getElementById('messageCountBadge');
   const tagFilterBar = document.getElementById('tagFilterBar');
+  const noteEditorPanel = document.getElementById('noteEditorPanel');
+  const messageListPanel = document.getElementById('messageList');
 
   function getConversationIdFromTab(explicitUrl = null) {
     const URL_PATTERNS = [
@@ -78,6 +83,7 @@
     const data = {
       messages,
       messageTags,
+      messageNotes,
       allTags: Array.from(allTags),
       deletedMessages: Array.from(deletedMessages),
     };
@@ -91,11 +97,13 @@
         if (result[key]) {
           messages = result[key].messages || [];
           messageTags = result[key].messageTags || {};
+          messageNotes = result[key].messageNotes || {};
           allTags = new Set(result[key].allTags || []);
           deletedMessages = new Set(result[key].deletedMessages || []);
         } else {
           messages = [];
           messageTags = {};
+          messageNotes = {};
           allTags = new Set();
           deletedMessages = new Set();
         }
@@ -346,19 +354,27 @@
         const bottomRow = document.createElement('div');
         bottomRow.className = 'sp-message-card__actions-bottom';
 
-        // Green circle index button — navigates to message
+        // Green circle index button — opens note editor for this message
         const msgIndex = messages.indexOf(msg) + 1;
         const indexBtn = document.createElement('button');
         indexBtn.className = 'sp-index-btn';
         indexBtn.textContent = msgIndex;
-        indexBtn.title = `Go to message #${msgIndex}`;
+        indexBtn.title = `Open note for message #${msgIndex}`;
+        // Show note indicator dot if this message already has a note
+        if (messageNotes[msg.turnKey] && messageNotes[msg.turnKey].trim()) {
+          indexBtn.classList.add('has-note');
+        }
         indexBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          // Select only — no scroll
+          // Select this card
           listBody.querySelectorAll('.sp-message-card.selected')
             .forEach((c) => c.classList.remove('selected'));
           selectedTurnKey = msg.turnKey;
           card.classList.add('selected');
+          // Scroll to message in chat
+          sendToContentScript({ type: 'SCROLL_TO_MESSAGE', turnKey: msg.turnKey });
+          // Open note editor
+          noteEditor.open(msg.turnKey, msgIndex);
         });
         bottomRow.appendChild(indexBtn);
 
@@ -840,12 +856,16 @@
 
     messages = [];
     messageTags = {};
+    messageNotes = {};
     allTags = new Set();
     deletedMessages = new Set();
     searchTerm = '';
     searchInput.value = '';
     updateSearchUI();
     renderTable();
+
+    // Close editor if open
+    if (noteEditor && noteEditor.isOpen) noteEditor.close();
 
     conversationId = await getConversationIdFromTab(newUrl);
     await loadData();
@@ -863,6 +883,27 @@
     conversationId = await getConversationIdFromTab();
     console.log('Sidebar init — conversationId:', conversationId);
     await loadData();
+
+    // Initialise Note Editor
+    noteEditor = new NoteEditor({
+      mountPoint:   noteEditorPanel,
+      messagePanel: messageListPanel,
+      onSave: (turnKey, md) => {
+        if (md && md.trim()) {
+          messageNotes[turnKey] = md;
+        } else {
+          delete messageNotes[turnKey];
+        }
+        saveData();
+        // Refresh the note-dot indicator on the index button
+        const btn = listBody.querySelector(
+          `.sp-message-card[data-turn-key="${turnKey}"] .sp-index-btn`
+        );
+        if (btn) btn.classList.toggle('has-note', !!(md && md.trim()));
+      },
+      getNotes: (turnKey) => messageNotes[turnKey] || '',
+    });
+
     updateSearchUI();
     updateTagBadge();
     refreshTagFilterBar();
