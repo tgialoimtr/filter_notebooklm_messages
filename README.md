@@ -2,6 +2,11 @@
 
 [![Watch the video](https://img.youtube.com/vi/QqYZYQUL658/0.jpg)](https://youtu.be/QqYZYQUL658)
 
+I updated the UI:
+
+![Long Thread Organizer Screenshot](https://i.ibb.co/d4GcYXTf/Screenshot-2026-07-04-152421.png)
+
+
 When you conversation with AI, the thread becomes long and you loose track to each message, this extension solve two issues:
 1. You can organize messages by tag and make subgroup by filtering by tag. It is helpful when you have many sub-topic inside a thread
 2. You can jump directly to each message. 
