@@ -53,6 +53,9 @@
   --transition-normal: 0.25s ease;
 
   --font: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* solid-color overlay (set by color picker) */
+  --bg-solid: transparent;
 }
 
 html, body {
@@ -131,6 +134,42 @@ body {
   letter-spacing: 0.02em;
   text-transform: uppercase;
   white-space: nowrap;
+  /* button reset */
+  font-family: var(--font);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), background var(--transition-fast),
+              color var(--transition-fast), box-shadow var(--transition-fast),
+              transform var(--transition-fast);
+}
+
+.sp-count-badge:hover {
+  border-color: var(--saigon-orange);
+  background: var(--accent-dim);
+  color: var(--saigon-orange);
+  box-shadow: 0 2px 8px rgba(245, 124, 0, 0.15);
+}
+
+.sp-count-badge:active {
+  transform: scale(0.93);
+  box-shadow: none;
+}
+
+/* Spinning reload icon shown while scanning */
+.sp-count-badge.scanning::before {
+  content: '';
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin-right: 5px;
+  animation: sp-spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes sp-spin {
+  to { transform: rotate(360deg); }
 }
 
 /* ─── Tag Filter Bar (replaces toolbar) ──────── */
@@ -1376,6 +1415,109 @@ body.has-bg-image .sp-search-float-wrap {
 .sp-bg-option__label--dark {
   color: var(--text-secondary) !important;
   text-shadow: none !important;
+}
+
+/* ─── Color Swatch Row ───────────────────────── */
+.sp-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sp-color-swatch {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex-shrink: 0;
+}
+
+.sp-color-swatch:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(74, 59, 50, 0.18);
+}
+
+.sp-color-swatch.selected {
+  border-color: var(--saigon-orange);
+  box-shadow: 0 0 0 3px rgba(245, 124, 0, 0.28);
+}
+
+/* "None" swatch — checker pattern */
+.sp-color-swatch--none {
+  background-color: var(--bg-primary);
+  background-image:
+    linear-gradient(45deg, var(--border-subtle) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--border-subtle) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--border-subtle) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--border-subtle) 75%);
+  background-size: 10px 10px;
+  background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+}
+
+.sp-color-swatch__label {
+  position: relative;
+  z-index: 1;
+  padding: 3px 5px;
+  font-size: 9px;
+  font-weight: 800;
+  font-family: var(--font);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  letter-spacing: 0.03em;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sp-color-swatch__label--dark {
+  color: rgba(0,0,0,0.65) !important;
+  text-shadow: none !important;
+}
+
+.sp-color-swatch--none .sp-color-swatch__label {
+  color: var(--text-secondary);
+  text-shadow: none;
+}
+
+.sp-color-swatch__check {
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--saigon-orange);
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+.sp-color-swatch__check svg {
+  width: 10px;
+  height: 10px;
+  fill: #fff;
+}
+
+.sp-color-swatch.selected .sp-color-swatch__check {
+  display: flex;
+}
+
+/* ─── Solid-color body layer ─────────────────── */
+/* Applies solid color as the base background-color.
+   background-image (from has-bg-image) sits on top independently. */
+html.has-bg-solid,
+html.has-bg-solid body {
+  background-color: var(--bg-solid) !important;
 }
 
 /* ─── Remove custom button ───────────────────── */

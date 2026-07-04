@@ -249,12 +249,15 @@
   async function scanMessages(retries = 5, delay = 500) {
     if (navigationLock) return;
 
+    messageCountBadge.classList.add('scanning');
+
     const response = await sendToContentScript({ type: 'SCAN_MESSAGES' });
     if (response?.messages) {
       const isStaleDOM = response.messages.some((m) => staleKeys.has(m.turnKey));
       if (isStaleDOM) {
         console.warn('Scan aborted: DOM still contains stale messages from previous topic. Retrying...');
         if (retries > 0) setTimeout(() => scanMessages(retries - 1, delay * 1.5), delay);
+        else messageCountBadge.classList.remove('scanning');
         return;
       }
 
@@ -266,12 +269,14 @@
       renderTable();
       updateEmptyState();
       applyFilters();
+      messageCountBadge.classList.remove('scanning');
     } else if (retries > 0) {
       console.log(`scanMessages: no response, retrying in ${delay}ms (${retries} left)`);
       setTimeout(() => scanMessages(retries - 1, delay * 1.5), delay);
     } else {
       console.warn('scanMessages: content script never responded');
       updateEmptyState();
+      messageCountBadge.classList.remove('scanning');
     }
   }
 
@@ -812,6 +817,10 @@
     // Close settings if open
     if (window.SettingsPanel && window.SettingsPanel.isOpen()) window.SettingsPanel.close();
     toggleTrash();
+  });
+
+  messageCountBadge.addEventListener('click', () => {
+    scanMessages(5, 500);
   });
 
   searchInput.addEventListener('input', () => {

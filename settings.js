@@ -1,9 +1,11 @@
 /**
  * Settings Panel — Background Image Picker
  *
- * Presets: None, Flower, Saigon Street, Sunset.
+ * Colors: 6 solid-color options (None = no image, just a body color).
+ * Presets: Flower, Saigon Street, Focus (sunset).
  * Custom: user can upload any image — stored as a base64 data URL in
  * chrome.storage.local so it survives panel restarts.
+ * Default: Focus (sunset image).
  */
 
 (() => {
@@ -11,9 +13,19 @@
 
   const SETTINGS_KEY = 'app_settings';
 
+  // ── Solid color options (shown in the "Color" section) ───────────────────────
+  const COLORS = [
+    { id: 'color-none',       label: 'None',        value: null,      textDark: false },
+    { id: 'color-orange',     label: 'Orange',      value: '#FFE0B2', textDark: true  },
+    { id: 'color-blue',       label: 'Blue',        value: '#BBDEFB', textDark: true  },
+    { id: 'color-navy',       label: 'Navy',        value: '#0D1B2A', textDark: false },
+    { id: 'color-white',      label: 'White',       value: '#FFFFFF', textDark: true  },
+    { id: 'color-pink',       label: 'Pink',        value: '#FFDDE1', textDark: true  },
+    { id: 'color-dark',       label: 'Dark',        value: '#1E1E1E', textDark: false },
+  ];
+
   // ── Preset images ───────────────────────────────────────────────────────────
   const PRESETS = [
-    { id: 'none', label: 'None', file: null },
     { id: 'flower', label: 'Flower', file: 'pictures/flower.jpg' },
     { id: 'saigon-street', label: 'Saigon Street', file: 'pictures/saigon-street.jpg' },
     { id: 'sunset', label: 'Focus', file: 'pictures/sunset.jpg' },
@@ -26,7 +38,8 @@
   const noteEditorPanel = document.getElementById('noteEditorPanel');
 
   let isOpen = false;
-  let currentBgId = 'none';
+  let currentBgId = 'sunset';     // default: Focus
+  let currentColorId = 'color-none'; // default: no solid color overlay
   let customDataUrl = null;   // base64 data URL of user-uploaded image
 
   // ── Storage helpers ─────────────────────────────────────────────────────────
@@ -41,8 +54,27 @@
   async function loadSettings() {
     return new Promise((resolve) => {
       chrome.storage.local.get([SETTINGS_KEY], (result) => {
-        resolve(result[SETTINGS_KEY] || { bgId: 'none', customDataUrl: null });
+        resolve(result[SETTINGS_KEY] || { bgId: 'sunset', colorId: 'color-none', customDataUrl: null });
       });
+    });
+  }
+
+  // ── Apply solid color ───────────────────────────────────────────────────────
+  function applyColor(colorId) {
+    currentColorId = colorId;
+    const col = COLORS.find((c) => c.id === colorId);
+    if (col && col.value) {
+      document.documentElement.style.setProperty('--bg-solid', col.value);
+      document.documentElement.classList.add('has-bg-solid');
+      document.body.classList.add('has-bg-solid');
+    } else {
+      document.documentElement.style.removeProperty('--bg-solid');
+      document.documentElement.classList.remove('has-bg-solid');
+      document.body.classList.remove('has-bg-solid');
+    }
+    // Refresh color swatch selection
+    settingsPanel.querySelectorAll('.sp-color-swatch').forEach((el) => {
+      el.classList.toggle('selected', el.dataset.colorId === colorId);
     });
   }
 
@@ -106,6 +138,23 @@
     header.appendChild(title);
     settingsPanel.appendChild(header);
 
+    // ── Section: Color ───────────────────────────────────────────────────────
+    const colorSection = document.createElement('div');
+    colorSection.className = 'sp-settings-section';
+
+    const colorTitle = document.createElement('h2');
+    colorTitle.className = 'sp-settings-section-title';
+    colorTitle.textContent = 'Color';
+    colorSection.appendChild(colorTitle);
+
+    const colorRow = document.createElement('div');
+    colorRow.className = 'sp-color-row';
+    COLORS.forEach((col) => {
+      colorRow.appendChild(buildColorSwatch(col));
+    });
+    colorSection.appendChild(colorRow);
+    settingsPanel.appendChild(colorSection);
+
     // ── Section: Background ──────────────────────────────────────────────────
     const section = document.createElement('div');
     section.className = 'sp-settings-section';
@@ -149,6 +198,40 @@
     section.appendChild(removeBtn);
 
     settingsPanel.appendChild(section);
+  }
+
+  // ── Color swatch builder ─────────────────────────────────────────────────
+  function buildColorSwatch(col) {
+    const btn = document.createElement('button');
+    btn.className = 'sp-color-swatch';
+    btn.dataset.colorId = col.id;
+    btn.title = col.label;
+    if (col.id === currentColorId) btn.classList.add('selected');
+
+    if (col.value) {
+      btn.style.background = col.value;
+    } else {
+      // "None" — checker pattern via CSS class
+      btn.classList.add('sp-color-swatch--none');
+    }
+
+    const label = document.createElement('span');
+    label.className = 'sp-color-swatch__label';
+    label.textContent = col.label;
+    if (col.textDark) label.classList.add('sp-color-swatch__label--dark');
+    btn.appendChild(label);
+
+    const check = document.createElement('span');
+    check.className = 'sp-color-swatch__check';
+    check.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>`;
+    btn.appendChild(check);
+
+    btn.addEventListener('click', async () => {
+      applyColor(col.id);
+      await saveSettings({ colorId: col.id });
+    });
+
+    return btn;
   }
 
   function buildPresetTile(bg) {
@@ -291,7 +374,8 @@
   async function init() {
     const settings = await loadSettings();
     customDataUrl = settings.customDataUrl || null;
-    applyBackground(settings.bgId || 'none', customDataUrl);
+    applyColor(settings.colorId || 'color-none');
+    applyBackground(settings.bgId || 'sunset', customDataUrl);
   }
 
   init();
