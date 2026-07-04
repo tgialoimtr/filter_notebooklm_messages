@@ -42,6 +42,7 @@
   const tagFilterBar = document.getElementById('tagFilterBar');
   const noteEditorPanel = document.getElementById('noteEditorPanel');
   const messageListPanel = document.getElementById('messageList');
+  const btnSettings = document.getElementById('btnSettings');
 
   function getConversationIdFromTab(explicitUrl = null) {
     const URL_PATTERNS = [
@@ -366,6 +367,8 @@
         }
         indexBtn.addEventListener('click', (e) => {
           e.stopPropagation();
+          // Close settings if open
+          if (window.SettingsPanel && window.SettingsPanel.isOpen()) window.SettingsPanel.close();
           // Select this card
           listBody.querySelectorAll('.sp-message-card.selected')
             .forEach((c) => c.classList.remove('selected'));
@@ -806,6 +809,8 @@
     e.stopPropagation();
     tagDropdownOpen = false;
     tagDropdown.classList.remove('open');
+    // Close settings if open
+    if (window.SettingsPanel && window.SettingsPanel.isOpen()) window.SettingsPanel.close();
     toggleTrash();
   });
 

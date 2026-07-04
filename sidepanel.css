@@ -1106,3 +1106,300 @@ body {
   background: var(--saigon-orange);
   border: 1.5px solid #fff;
 }
+
+/* ═══════════════════════════════════════════════
+   Background Image System
+   Applied via body style: --bg-image: url(...)
+   ═══════════════════════════════════════════════ */
+
+body {
+  --bg-image: none;
+}
+
+/* When a background image is chosen, apply it directly to the body.
+   Also clear the html/body background-color so it doesn't cover the image. */
+body.has-bg-image {
+  background-image: var(--bg-image) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  background-attachment: fixed !important;
+}
+
+html:has(body.has-bg-image) {
+  background: transparent;
+}
+
+/* Make the header semi-transparent when bg image is active */
+body.has-bg-image .sp-header {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Make table-wrapper transparent so the bg shows through */
+body.has-bg-image .sp-table-wrapper {
+  background: transparent;
+}
+
+/* Give message cards a frosted look */
+body.has-bg-image .sp-message-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+/* Settings panel also shows the bg */
+body.has-bg-image .sp-settings-panel {
+  background: transparent;
+}
+
+body.has-bg-image .sp-settings-header {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+body.has-bg-image .sp-settings-section {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-lg);
+  margin: 10px;
+  padding: 14px;
+}
+
+/* Floating search bar stays readable — no gradient, image spans to the bottom */
+body.has-bg-image .sp-search-float-wrap {
+  background: transparent;
+}
+
+/* ═══════════════════════════════════════════════
+   Settings Panel  (.sp-settings-*)
+   ═══════════════════════════════════════════════ */
+
+.sp-settings-panel {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-primary);
+  animation: sp-slide-down 0.18s ease;
+}
+
+.sp-settings-panel::-webkit-scrollbar { width: 4px; }
+.sp-settings-panel::-webkit-scrollbar-track { background: transparent; }
+.sp-settings-panel::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 20px; }
+
+/* ─── Settings Header ───────────────────────── */
+.sp-settings-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+}
+
+.sp-settings-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  flex: 1;
+}
+
+/* ─── Settings Section ──────────────────────── */
+.sp-settings-section {
+  padding: 16px 12px;
+}
+
+.sp-settings-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 12px;
+}
+
+/* ─── Background Image Grid ─────────────────── */
+.sp-bg-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.sp-bg-option {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-md);
+  border: 2px solid transparent;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.sp-bg-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74, 59, 50, 0.18);
+}
+
+.sp-bg-option.selected {
+  border-color: var(--saigon-orange);
+  box-shadow: 0 0 0 3px rgba(245, 124, 0, 0.28);
+}
+
+/* "None" tile — subtle checker pattern */
+.sp-bg-option--none {
+  background-color: var(--bg-primary);
+  background-image:
+    linear-gradient(45deg, var(--border-subtle) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--border-subtle) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--border-subtle) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--border-subtle) 75%);
+  background-size: 12px 12px;
+  background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+}
+
+/* Gradient overlay at bottom of each thumbnail for label readability */
+.sp-bg-option:not(.sp-bg-option--none)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 55%);
+  pointer-events: none;
+}
+
+.sp-bg-option__label {
+  position: relative;
+  z-index: 1;
+  padding: 5px 7px;
+  font-size: 10px;
+  font-weight: 800;
+  font-family: var(--font);
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  letter-spacing: 0.03em;
+  line-height: 1;
+}
+
+.sp-bg-option--none .sp-bg-option__label {
+  color: var(--text-secondary);
+  text-shadow: none;
+}
+
+/* Checkmark badge shown when selected */
+.sp-bg-option__check {
+  display: none;
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--saigon-orange);
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+}
+
+.sp-bg-option__check svg {
+  width: 12px;
+  height: 12px;
+  fill: #fff;
+}
+
+.sp-bg-option.selected .sp-bg-option__check {
+  display: flex;
+}
+
+/* ─── Custom upload tile ─────────────────────── */
+.sp-bg-option--custom {
+  border: 2px dashed var(--border-medium);
+  background-color: var(--bg-primary);
+}
+
+/* When a custom image has been loaded, the dashed border should switch to solid */
+.sp-bg-option--custom.selected {
+  border-style: solid;
+}
+
+.sp-bg-option--custom:not(.selected):hover {
+  border-color: var(--saigon-orange);
+  background-color: rgba(245, 124, 0, 0.04);
+}
+
+.sp-bg-option__upload-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font);
+  pointer-events: none;
+  transition: color var(--transition-fast);
+}
+
+.sp-bg-option__upload-icon svg {
+  width: 26px;
+  height: 26px;
+  opacity: 0.5;
+}
+
+.sp-bg-option--custom:hover .sp-bg-option__upload-icon {
+  color: var(--saigon-orange);
+}
+
+.sp-bg-option--custom:hover .sp-bg-option__upload-icon svg {
+  opacity: 0.85;
+}
+
+/* Dark label variant (for None tile which has light bg) */
+.sp-bg-option__label--dark {
+  color: var(--text-secondary) !important;
+  text-shadow: none !important;
+}
+
+/* ─── Remove custom button ───────────────────── */
+.sp-remove-custom-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(229, 57, 53, 0.25);
+  background: rgba(229, 57, 53, 0.07);
+  color: var(--saigon-red);
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  align-self: flex-start;
+}
+
+.sp-remove-custom-btn:hover {
+  background: rgba(229, 57, 53, 0.14);
+  border-color: rgba(229, 57, 53, 0.45);
+}
+
+
