@@ -17,6 +17,7 @@
       <div class="sp-title-wrap">
         <h1 class="sp-title">Long Thread Organizer</h1>
         <div class="sp-title-actions">
+          <span class="sp-trial-badge" id="trialBadge" style="display:none;"></span>
           <button class="sp-count-badge" id="messageCountBadge" title="Click to rescan messages" aria-label="Message count — click to rescan">0 msgs</button>
           <button class="sp-icon-btn sp-icon-btn-toolbar" id="btnTrashcan" title="Deleted messages"
             aria-label="Deleted messages">
@@ -76,6 +77,9 @@
   <!-- Settings panel — replaces message list when open -->
   <div class="sp-settings-panel" id="settingsPanel" style="display:none;"></div>
 
+  <!-- Paywall panel — replaces message list when trial has expired -->
+  <div class="sp-paywall-panel" id="paywallPanel" style="display:none;"></div>
+
   <!-- Hidden dropdown used internally by JS for tag filter logic -->
   <div class="sp-filter-wrapper" id="tagFilterWrapper" style="display:none;">
     <button class="sp-filter-btn" id="btnFilterTags" style="display:none;">
@@ -87,6 +91,8 @@
 
   <script src="noteEditor.js"></script>
   <script src="settings.js"></script>
+  <script src="license.js"></script>
+  <script src="paywall.js"></script>
   <script src="sidepanel.js"></script>
 </body>
 

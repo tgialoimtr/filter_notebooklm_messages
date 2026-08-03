@@ -43,6 +43,7 @@
   const noteEditorPanel = document.getElementById('noteEditorPanel');
   const messageListPanel = document.getElementById('messageList');
   const btnSettings = document.getElementById('btnSettings');
+  const trialBadge = document.getElementById('trialBadge');
 
   function getConversationIdFromTab(explicitUrl = null) {
     const URL_PATTERNS = [
@@ -893,6 +894,18 @@
     tabSwitchDebounce = setTimeout(() => handleNotebookChange(), 300);
   });
 
+  function updateTrialBadge(daysLeft) {
+    trialBadge.textContent = daysLeft === 1 ? '1 day left' : `${daysLeft} days left`;
+    trialBadge.style.display = '';
+  }
+
+  function startApp() {
+    updateSearchUI();
+    updateTagBadge();
+    refreshTagFilterBar();
+    setTimeout(() => scanMessages(5, 600), 500);
+  }
+
   async function init() {
     conversationId = await getConversationIdFromTab();
     console.log('Sidebar init — conversationId:', conversationId);
@@ -918,10 +931,21 @@
       getNotes: (turnKey) => messageNotes[turnKey] || '',
     });
 
-    updateSearchUI();
-    updateTagBadge();
-    refreshTagFilterBar();
-    setTimeout(() => scanMessages(5, 600), 500);
+    const licenseState = await window.License.getState();
+
+    if (licenseState.status === 'expired') {
+      trialBadge.style.display = 'none';
+      window.Paywall.open(() => startApp());
+      return;
+    }
+
+    if (licenseState.status === 'trial') {
+      updateTrialBadge(licenseState.daysLeft);
+    } else {
+      trialBadge.style.display = 'none';
+    }
+
+    startApp();
   }
 
   updateSearchUI();
